@@ -79,6 +79,7 @@ class TelinkAdapter extends Adapter {
                 // startResult = 'reset';
             // }
             await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION);
+            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET, {mode: 1});
 
             // await this.driver.sendCommand(TelinkCommandCode.RawMode, {enabled: 0x01});
             // @todo check
@@ -678,7 +679,7 @@ class TelinkAdapter extends Adapter {
 
         logger.debug(`Set security key`, NS);
         // await this.driver.sendCommand(
-        //     TelinkCommandCode.SetSecurityStateKey,
+            // TelinkCommandCode.ZBHCI_CMD_BDB_PRE_INSTALL_CODE,
         //     {
         //         keyType: this.networkOptions.networkKeyDistribute ?
         //             ZPSNwkKeyState.ZPS_ZDO_DISTRIBUTED_LINK_KEY :
@@ -756,10 +757,10 @@ class TelinkAdapter extends Adapter {
     };
 
 
-    private deviceAnnounceListener(networkAddress: number, ieeeAddr: string): void {
+    private deviceAnnounceListener(networkAddress: number, ieeeAddr: string, join: boolean): void {
         // @todo debounce
         const payload: Events.DeviceAnnouncePayload = {networkAddress, ieeeAddr};
-        if (this.joinPermitted === true) {
+        if (this.joinPermitted === true && join) {
             this.emit(Events.Events.deviceJoined, payload)
         } else {
             this.emit(Events.Events.deviceAnnounce, payload)

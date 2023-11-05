@@ -26,6 +26,11 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     //         {name: 'timestampUTC', parameterType: ParameterType.UINT32}, // <Timestamp UTC: uint32_t> from 2000-01-01 00:00:00
     //     ]
     // },
+    [TelinkMessageCode.ZBHCI_CMD_MAC_ADDR_IND]: {
+        response: [
+            {name: 'ieee', parameterType: 'IEEEADDR'},
+        ]
+    },
     [TelinkMessageCode.ZBHCI_CMD_NODES_DEV_ANNCE_IND]: {
         response: [
             {name: 'shortAddress', parameterType: ParameterType.UINT16BE},

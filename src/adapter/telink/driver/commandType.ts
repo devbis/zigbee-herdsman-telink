@@ -70,6 +70,16 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
             ],
         ],
     },
+    [TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET]: {  // 0x0008
+        request: [
+            {name: 'mode', parameterType: 'UINT8'}, //<mode: uint8_t>
+        ],
+        response: [
+            [
+                {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET},
+            ],
+        ],
+    },
     [TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ]: {  // 0x0030
         request: [],
         response: [

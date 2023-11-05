@@ -320,7 +320,14 @@ export default class Telink extends EventEmitter {
                         {
                             let networkAddress = telinkObject.payload.shortAddress;
                             let ieeeAddr = telinkObject.payload.ieee;
-                            this.emit('DeviceAnnounce', networkAddress, ieeeAddr);
+                            this.emit('DeviceAnnounce', networkAddress, ieeeAddr, true);
+                        }
+                        break;
+                    case TelinkMessageCode.ZBHCI_CMD_MAC_ADDR_IND:
+                        {
+                            // let networkAddress = telinkObject.payload.shortAddress;
+                            let ieeeAddr = telinkObject.payload.ieee;
+                            this.emit('DeviceAnnounce', null, ieeeAddr, false);
                         }
                         break;
                     case TelinkMessageCode.ZBHCI_CMD_NODE_LEAVE_IND:
