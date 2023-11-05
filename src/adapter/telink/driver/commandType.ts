@@ -158,6 +158,52 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
             ],
         ]
     },
+    [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_SIMPLE_DESC_REQ]: {
+        request: [
+            {name: 'destShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
+            {name: 'targetShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
+            {name: 'endpoint', parameterType: 'UINT8'},
+        ],
+        response: [
+            [
+                {
+                    receivedProperty: 'code',
+                    matcher: equal,
+                    value: TelinkMessageCode.ZBHCI_CMD_DISCOVERY_SIMPLE_DESC_RSP
+                },
+                {
+                    receivedProperty: 'payload.sourceAddress',
+                    matcher: equal,
+                    expectedProperty: 'payload.targetShortAddress'
+                },
+                // {
+                //     receivedProperty: 'payload.clusterID',
+                //     matcher: equal,
+                //     value: 0x8002
+                // },
+            ],
+        ]
+    },
+    [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_REQ]: {
+        request: [
+            {name: 'destShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
+            {name: 'targetShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
+        ],
+        response: [
+            [
+                {
+                    receivedProperty: 'code',
+                    matcher: equal,
+                    value: TelinkMessageCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_RSP
+                },
+                {
+                    receivedProperty: 'payload.sourceAddress',
+                    matcher: equal,
+                    expectedProperty: 'payload.targetShortAddress'
+                },
+            ],
+        ]
+    },
     // [TelinkCommandCode.SetDeviceType]: {  // 0x0023
     //     request: [
     //         {name: 'deviceType', parameterType: ParameterType.UINT8} //<device type: uint8_t>

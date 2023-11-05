@@ -114,14 +114,15 @@ class TelinkAdapter extends Adapter {
 
     public async getCoordinator(): Promise<TsType.Coordinator> {
         logger.debug('getCoordinator', NS);
-        const networkResponse: any = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NWK_ADDR_REQ);
+        // const networkResponse: any = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NWK_ADDR_REQ);
 
         // @TODO deal hardcoded endpoints, made by analogy with deconz
         // polling the coordinator on some firmware went into a memory leak, so we don't ask this info
         const response: TsType.Coordinator = {
-            networkAddress: 0,
-            manufacturerID: 0,
-            ieeeAddr: networkResponse.payload.extendedAddress,
+            networkAddress: 0x0000,
+            manufacturerID: 0x1141,
+            ieeeAddr: '0xa4c1380000000000', // FIXME
+            // ieeeAddr: networkResponse.payload.extendedAddress,
             endpoints: coordinatorEndpoints
         };
         logger.debug(`getCoordinator ${JSON.stringify(response)}`, NS);
@@ -194,8 +195,8 @@ class TelinkAdapter extends Adapter {
     public async getNetworkParameters(): Promise<TsType.NetworkParameters> {
         logger.debug('getNetworkParameters', NS);
         const resultPayload: TsType.NetworkParameters = {
-            panID: <number>1,
-            extendedPanID: <number>11,
+            panID: <number>0x0011223344556677,
+            extendedPanID: <number>0x0011223344556677,
             channel: <number>11,
         }
         return Promise.resolve(resultPayload)
@@ -238,7 +239,6 @@ class TelinkAdapter extends Adapter {
     };
 
     public async lqi(networkAddress: number): Promise<TsType.LQI> {
-
         return this.queue.execute<LQI>(async (): Promise<LQI> => {
             logger.debug(`lqi, ${JSON.stringify(arguments)}`, NS);
 
@@ -260,6 +260,16 @@ class TelinkAdapter extends Adapter {
 
             const request = async (startIndex: number): Promise<any> => {
                 try {
+                    if (networkAddress === 0x0) {
+                        // TODO: get direct children of coordinator
+                        return {
+                            status: 0,
+                            tableEntrys: 0,
+                            startIndex: 0,
+                            tableListCount: 0,
+                            tableList: [],
+                        };
+                    }
                     const resultPayload = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ,
                         {targetAddress: networkAddress, startIndex: startIndex}
                     );
@@ -328,7 +338,7 @@ class TelinkAdapter extends Adapter {
             try {
                 const nodeDescriptorResponse = await this.driver.sendCommand(
                     TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NODE_DESC_REQ, {
-                        destShortAddress: 0x0,
+                        destShortAddress: networkAddress,
                         targetShortAddress: networkAddress,
                     }
                 );
@@ -364,33 +374,32 @@ class TelinkAdapter extends Adapter {
     };
 
     public async activeEndpoints(networkAddress: number): Promise<TsType.ActiveEndpoints> {
-        return new Promise(()=>{});
-        // return this.queue.execute<ActiveEndpoints>(async () => {
-        //     logger.debug('ActiveEndpoints request', NS);
-        //     const payload = {
-        //         targetShortAddress: networkAddress
-        //     }
-        //     try {
-        //         const result = await this.driver.sendCommand(TelinkCommandCode.ActiveEndpoint, payload);
-        //         const buf = Buffer.from(<Buffer>result.payload.payload);
-        //         const epCount = buf.readUInt8(4);
-        //         const epList = [];
-        //         for (let i = 5; i < (epCount + 5); i++) {
-        //             epList.push(buf.readUInt8(i));
-        //         }
-        //
-        //         const payloadAE: TsType.ActiveEndpoints = {
-        //             endpoints: <number[]>epList
-        //         }
-        //
-        //         logger.debug(`ActiveEndpoints response: ${JSON.stringify(payloadAE)}`, NS);
-        //         return payloadAE;
-        //
-        //     } catch (error) {
-        //         logger.error(`RECEIVING ActiveEndpoints FAILED, ${error}`, NS);
-        //         return Promise.reject(new Error("RECEIVING ActiveEndpoints FAILED " + error));
-        //     }
-        // }, networkAddress);
+        return this.queue.execute<ActiveEndpoints>(async () => {
+            logger.debug('ActiveEndpoints request', NS);
+            const payload = {
+                destShortAddress: networkAddress,
+                targetShortAddress: networkAddress,
+            }
+            try {
+                const result = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_REQ, payload);
+                const buf = Buffer.from(<Buffer>result.payload.payload);
+                const epCount = buf.readUInt8(4);
+                const epList = [];
+                for (let i = 0; i < epCount; i++) {
+                    epList.push(buf.readUInt8(i));
+                }
+
+                const payloadAE: TsType.ActiveEndpoints = {
+                    endpoints: <number[]>epList
+                }
+
+                logger.debug(`ActiveEndpoints response: ${JSON.stringify(payloadAE)}`, NS);
+                return payloadAE;
+            } catch (error) {
+                logger.error(`RECEIVING ActiveEndpoints FAILED, ${error}`, NS);
+                return Promise.reject(new Error("RECEIVING ActiveEndpoints FAILED " + error));
+            }
+        }, networkAddress);
     };
 
     public async simpleDescriptor(networkAddress: number, endpointID: number): Promise<TsType.SimpleDescriptor> {
@@ -399,6 +408,7 @@ class TelinkAdapter extends Adapter {
 
             try {
                 const payload = {
+                    destShortAddress: networkAddress,
                     targetShortAddress: networkAddress,
                     endpoint: endpointID
                 }

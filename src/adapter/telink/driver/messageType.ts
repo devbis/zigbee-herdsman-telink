@@ -103,6 +103,24 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
             {name: 'payload', parameterType: 'BUFFER_RAW'}, 
         ],
     },
+    [TelinkMessageCode.ZBHCI_CMD_DISCOVERY_SIMPLE_DESC_RSP]: {
+        response: [
+            {name: 'sourceAddress', parameterType: 'UINT16BE'},
+            {name: 'seqNum', parameterType: 'UINT8'},
+            {name: 'status', parameterType: 'UINT8'},
+            {name: 'targetShortAddress', parameterType: 'UINT16BE'},
+            {name: 'payload', parameterType: 'BUFFER_RAW'}, 
+        ],
+    },
+    [TelinkMessageCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_RSP]: {
+        response: [
+            {name: 'sourceAddress', parameterType: 'UINT16BE'},
+            {name: 'seqNum', parameterType: 'UINT8'},
+            {name: 'status', parameterType: 'UINT8'},
+            {name: 'targetShortAddress', parameterType: 'UINT16BE'},
+            {name: 'payload', parameterType: 'BUFFER_RAW'}, 
+        ],
+    },
     [TelinkMessageCode.ZBHCI_CMD_MGMT_LEAVE_RSP]: {
         // src_addr, seq_num, status, ieee_addr, rejoin = struct.unpack("!H2BQB", bytes_data)
         response: [
