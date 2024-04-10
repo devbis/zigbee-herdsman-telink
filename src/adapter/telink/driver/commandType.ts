@@ -195,30 +195,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
                     matcher: equal,
                     expectedProperty: 'payload.targetShortAddress'
                 },
-                // {
-                //     receivedProperty: 'payload.clusterID',
-                //     matcher: equal,
-                //     value: 0x8002
-                // },
             ],
-            // [
-            //     {
-            //         receivedProperty: 'code',
-            //         matcher: equal,
-            //         value: TelinkMessageCode.ZBHCI_CMD_RAW_DATA_MSG,
-
-            //     },
-            //     {
-            //         receivedProperty: 'payload.sourceAddress',
-            //         matcher: equal,
-            //         expectedProperty: 'payload.targetShortAddress'
-            //     },
-            //     // {
-            //     //     receivedProperty: 'payload.clusterID',
-            //     //     matcher: equal,
-            //     //     value: 0x8002
-            //     // },
-            // ],
         ]
     },
     [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_REQ]: {
