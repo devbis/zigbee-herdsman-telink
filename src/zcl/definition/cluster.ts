@@ -2638,13 +2638,15 @@ const Cluster: {
     pm25Measurement: {
         ID: 0x042a,
         attributes: {
-            //IKEA Vindstyrka: measured value is reported as float
-            measuredValueIkea: {ID: 0x0000, type: DataType.singlePrec, manufacturerCode: ManufacturerCode.IKEA_OF_SWEDEN},
-            //default cluster spec: values reported as uint16
-            measuredValue: {ID: 0x0000, type: DataType.uint16},
-            measuredMinValue: {ID: 0x0001, type: DataType.uint16},
-            measuredMaxValue: {ID: 0x0002, type: DataType.uint16},
-            measuredTolerance: {ID: 0x0003, type: DataType.uint16},
+            measuredValue: {ID: 0x0000, type: DataType.singlePrec},
+            measuredMinValue: {ID: 0x0001, type: DataType.singlePrec},
+            measuredMaxValue: {ID: 0x0002, type: DataType.singlePrec},
+            measuredTolerance: {ID: 0x0003, type: DataType.singlePrec},
+            // heiman, aqara, xiaomi: values reported as uint16 contrary to standard
+            measuredValueUint16: {ID: 0x0000, type: DataType.uint16},
+            measuredMinValueUint16: {ID: 0x0001, type: DataType.uint16},
+            measuredMaxValueUint16: {ID: 0x0002, type: DataType.uint16},
+            measuredToleranceUint16: {ID: 0x0003, type: DataType.uint16},
         },
         commands: {},
         commandsResponse: {},
@@ -4224,7 +4226,7 @@ const Cluster: {
             offLedIntensity: {ID: 83, type: DataType.uint8}, // percent
             actionReport: {ID: 84, type: DataType.enum8}, // singleTapUp: 1,2, doubleTapUp: 1,4, singleTapDown: 17,18, doubleTapDown: 17,20
             minimumBrightness: {ID: 85, type: DataType.uint16},
-            connectedLoadRM: {ID: 96, type: DataType.uint16}, // unit watt/hr for Calypso RM3500 & Load Controller RM3250 
+            connectedLoadRM: {ID: 96, type: DataType.uint16}, // unit watt/hr for Calypso RM3500 & Load Controller RM3250
             currentLoad: {ID: 112, type: DataType.bitmap8}, // related to ecoMode(s)
             ecoMode: {ID: 113, type: DataType.int8}, // default:-128||-100-0-100%
             ecoMode1: {ID: 114, type: DataType.uint8}, // default:255||0-99
@@ -4252,7 +4254,7 @@ const Cluster: {
             currentSetpoint: {ID: 299, type: DataType.int16}, // W:to ocuppiedHeatSetpoint, R:depends of SinopeOccupancy
             // attribute ID: 300's readable, returns a buffer
             reportLocalTemperature: {ID: 301, type: DataType.int16},
-            // attribute ID: 512's readable 
+            // attribute ID: 512's readable
             coldLoadPickupStatus: {ID: 643, type: DataType.uint8},
         },
         commands: {
@@ -5017,7 +5019,7 @@ const Cluster: {
         },
         commands: {},
         commandsResponse: {},
-    },    
+    },
     sprutDevice: {
         ID: 26112,
         manufacturerCode: 26214,
@@ -5134,7 +5136,7 @@ const Cluster: {
             activeEnergyReports: {ID: 0x0014, type: DataType.uint16},
             powerType: {ID: 0x0015, type: DataType.boolean},
             switchType: {ID: 0x0016, type: DataType.uint8},
-            quickStartTime: {ID: 0x0017, type: DataType.uint8}, 
+            quickStartTime: {ID: 0x0017, type: DataType.uint8},
             quickStartLevel: {ID: 0x0018, type: DataType.uint8},
             higherOutputInNonNeutral: {ID: 0x0019, type: DataType.boolean},
             nonNeutralAuxMediumGear: {ID: 0x001e, type: DataType.uint8},
@@ -5341,28 +5343,28 @@ const Cluster: {
             },
         },
         commandsResponse: {},
-    },    
+    },
     manuSpecificBosch3: {
         ID: 0xe002,
         manufacturerCode: ManufacturerCode.Bosch,
         attributes: {
-            humidity       : {ID: 0x4000, type: 0x21}, 
-            unknown1       : {ID: 0x4001, type: 0x21}, 
-            unknown2       : {ID: 0x4002, type: 0x21}, 
-            airpurity      : {ID: 0x4003, type: 0x21}, 
-            temperature    : {ID: 0x4004, type: 0x29}, 
-            illuminance_lux: {ID: 0x4005, type: 0x21}, 
-            battery        : {ID: 0x4006, type: 0x21}, 
-            unknown3       : {ID: 0x4007, type: 0x21}, 
-            unknown4       : {ID: 0x4008, type: 0x21}, 
-            unknown5       : {ID: 0x4009, type: 0x21}, 
-            unknown6       : {ID: 0x400a, type: 0x21}, 
-            unknown7       : {ID: 0x400b, type: 0x21}, 
-            unknown8       : {ID: 0x400c, type: 0x21}, 
+            humidity       : {ID: 0x4000, type: 0x21},
+            unknown1       : {ID: 0x4001, type: 0x21},
+            unknown2       : {ID: 0x4002, type: 0x21},
+            airpurity      : {ID: 0x4003, type: 0x21},
+            temperature    : {ID: 0x4004, type: 0x29},
+            illuminance_lux: {ID: 0x4005, type: 0x21},
+            battery        : {ID: 0x4006, type: 0x21},
+            unknown3       : {ID: 0x4007, type: 0x21},
+            unknown4       : {ID: 0x4008, type: 0x21},
+            unknown5       : {ID: 0x4009, type: 0x21},
+            unknown6       : {ID: 0x400a, type: 0x21},
+            unknown7       : {ID: 0x400b, type: 0x21},
+            unknown8       : {ID: 0x400c, type: 0x21},
         },
         commands: {},
         commandsResponse: {},
-    },    
+    },
     manuSpecificBosch5: {
         ID: 0xe004,
         manufacturerCode: ManufacturerCode.Bosch,
@@ -5372,7 +5374,7 @@ const Cluster: {
         },
         commands: {},
         commandsResponse: {},
-    },    
+    },
     manuSpecificBosch7: {
         ID: 0xe006,
         manufacturerCode: ManufacturerCode.Bosch,
@@ -5388,7 +5390,7 @@ const Cluster: {
             },
         },
         commandsResponse: {},
-    },    
+    },
     manuSpecificBosch8: {
         ID: 0xe007,
         manufacturerCode: ManufacturerCode.Bosch,
