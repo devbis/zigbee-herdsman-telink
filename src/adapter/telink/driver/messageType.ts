@@ -16,11 +16,40 @@ export interface TelinkMessageType {
 export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     [TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE]: {
         response: [
-            {name: 'messageCode', parameterType: 'UINT16BE'},
-            {name: 'status', parameterType: 'UINT8'},
-            {name: 'seqNum', parameterType: 'UINT8'},
+            {name: 'messageCode', parameterType: ParameterType.UINT16BE},
+            {name: 'status', parameterType: ParameterType.UINT8},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
         ]
     },
+
+    [TelinkMessageCode.ZBHCI_CMD_RAW_DATA_MSG]: {
+        response: [
+            {name: 'destinationAddressMode', parameterType: ParameterType.UINT8},
+            {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
+            {name: 'destinationAddress', parameterType: ParameterType.UINT16},
+
+            {name: 'sourceAddressMode', parameterType: ParameterType.UINT8}, // <source address mode: uint8_t>
+            {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
+            {name: 'profileID', parameterType: ParameterType.UINT16}, // <Profile ID: uint16_t>
+            {name: 'clusterID', parameterType: ParameterType.UINT16}, // <cluster ID: uint16_t>
+
+            // {name: 'length', parameterType: ParameterType.UINT16}, // removed from packet
+            // {name: 'ptr', parameterType: ParameterType.UINT32}, // removed from packet
+            // {name: 'tick', parameterType: ParameterType.UINT32}, // removed from packet
+            {name: 'sourceAddress', parameterType: ParameterType.SHORT_OR_IEEE_LE},
+            {name: 'sourceMacAddress', parameterType: ParameterType.UINT16},
+
+            {name: 'status', parameterType: ParameterType.UINT8},
+            {name: 'securityStatus', parameterType: ParameterType.UINT8},
+            {name: 'lqi', parameterType: ParameterType.UINT8},
+            {name: 'rssi', parameterType: ParameterType.INT8},
+            {name: 'apsCounter', parameterType: ParameterType.UINT8},
+
+            {name: 'payloadSize', parameterType: ParameterType.UINT16}, // <payload size : uint8_t>
+            {name: 'payload', parameterType: ParameterType.BUFFER_RAW}, // <payload : data each element is
+        ]
+    },
+
     // [TelinkMessageCode.GetTimeServer]: {
     //     response: [
     //         {name: 'timestampUTC', parameterType: ParameterType.UINT32}, // <Timestamp UTC: uint32_t> from 2000-01-01 00:00:00
@@ -28,7 +57,7 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     // },
     [TelinkMessageCode.ZBHCI_CMD_MAC_ADDR_IND]: {
         response: [
-            {name: 'ieee', parameterType: 'IEEEADDR'},
+            {name: 'ieee', parameterType: ParameterType.IEEEADDR},
         ]
     },
     [TelinkMessageCode.ZBHCI_CMD_NODES_DEV_ANNCE_IND]: {
@@ -49,8 +78,8 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     },
     [TelinkMessageCode.ZBHCI_CMD_NODE_LEAVE_IND]: {
         response: [
-            {name: 'totalCount', parameterType: 'UINT16BE'}, // <Packet Type: uint16_t>
-            {name: 'ieee', parameterType: 'IEEEADDR'},
+            {name: 'totalCount', parameterType: ParameterType.UINT16BE}, // <Packet Type: uint16_t>
+            {name: 'ieee', parameterType: ParameterType.IEEEADDR},
         ]
     },
     [TelinkMessageCode.ZBHCI_CMD_DATA_CONFIRM]: {
@@ -85,53 +114,69 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     },
     [TelinkMessageCode.ZBHCI_CMD_ZCL_REPORT_MSG_RCV]: {
         response: [
-            {name: 'sourceAddress', parameterType: 'UINT16BE'},
-            {name: 'sourceEndpoint', parameterType: 'UINT8'}, // <source endpoint: uint8_t>
-            {name: 'destinationEndpoint', parameterType: 'UINT8'}, // <destination endpoint: uint8_t>
-            {name: 'seqNum', parameterType: 'UINT8'}, // <seqNum: uint8_t>
-            {name: 'clusterID', parameterType: 'UINT16BE'}, // <cluster ID: uint16_t>
-            {name: 'numAttr', parameterType: 'UINT8'}, // <seqNum: uint8_t>
-            {name: 'attrData', parameterType: 'BUFFER_RAW'}, // <data: auint8_t>
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
+            {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
+            {name: 'seqNum', parameterType: ParameterType.UINT8}, // <seqNum: uint8_t>
+            {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
+            {name: 'numAttr', parameterType: ParameterType.UINT8}, // <seqNum: uint8_t>
+            {name: 'attrData', parameterType: ParameterType.BUFFER_RAW}, // <data: auint8_t>
         ],
     },
     [TelinkMessageCode.ZBHCI_CMD_DISCOVERY_NODE_DESC_RSP]: {
         response: [
-            {name: 'sourceAddress', parameterType: 'UINT16BE'},
-            {name: 'seqNum', parameterType: 'UINT8'},
-            {name: 'status', parameterType: 'UINT8'},
-            {name: 'targetShortAddress', parameterType: 'UINT16BE'},
-            {name: 'payload', parameterType: 'BUFFER_RAW'}, 
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
+            {name: 'status', parameterType: ParameterType.UINT8},
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'logicalType', parameterType: ParameterType.UINT8},
+            {name: 'flags', parameterType: ParameterType.UINT8},
+            {name: 'MACcapability', parameterType: ParameterType.MACCAPABILITY},
+            {name: 'manufacturerCode', parameterType: ParameterType.UINT16BE},
+            {name: 'payload', parameterType: ParameterType.BUFFER_RAW},
         ],
     },
     [TelinkMessageCode.ZBHCI_CMD_DISCOVERY_SIMPLE_DESC_RSP]: {
         response: [
-            {name: 'sourceAddress', parameterType: 'UINT16BE'},
-            {name: 'seqNum', parameterType: 'UINT8'},
-            {name: 'status', parameterType: 'UINT8'},
-            {name: 'targetShortAddress', parameterType: 'UINT16BE'},
-            {name: 'payload', parameterType: 'BUFFER_RAW'}, 
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
+            {name: 'status', parameterType: ParameterType.UINT8},
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'payload', parameterType: ParameterType.BUFFER_RAW},
         ],
     },
     [TelinkMessageCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_RSP]: {
         response: [
-            {name: 'sourceAddress', parameterType: 'UINT16BE'},
-            {name: 'seqNum', parameterType: 'UINT8'},
-            {name: 'status', parameterType: 'UINT8'},
-            {name: 'targetShortAddress', parameterType: 'UINT16BE'},
-            {name: 'payload', parameterType: 'BUFFER_RAW'}, 
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
+            {name: 'status', parameterType: ParameterType.UINT8},
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'payload', parameterType: ParameterType.BUFFER_RAW},
         ],
     },
     [TelinkMessageCode.ZBHCI_CMD_MGMT_LEAVE_RSP]: {
         // src_addr, seq_num, status, ieee_addr, rejoin = struct.unpack("!H2BQB", bytes_data)
         response: [
-            {name: 'sourceAddress', parameterType: 'UINT16BE'},
-            {name: 'seqNum', parameterType: 'UINT8'},
-            {name: 'status', parameterType: 'UINT8'},
-            {name: 'ieee', parameterType: 'IEEEADDR'},
-            {name: 'rejoin', parameterType: 'UINT8'},
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
+            {name: 'status', parameterType: ParameterType.UINT8},
+            {name: 'ieee', parameterType: ParameterType.IEEEADDR},
+            {name: 'rejoin', parameterType: ParameterType.UINT8},
         ],
     },
-    
+
+    [TelinkMessageCode.ZBHCI_CMD_GET_LOCAL_NWK_INFO_RSP]: {
+        response: [
+            {name: 'devType', parameterType: ParameterType.UINT8},
+            {name: 'MACcapability', parameterType: ParameterType.MACCAPABILITY},
+            {name: 'onANetwork', parameterType: ParameterType.UINT8},
+            {name: 'panID', parameterType: ParameterType.UINT16BE},
+            {name: 'extPanID', parameterType: ParameterType.IEEEADDR},
+            {name: 'nwkAddr', parameterType: ParameterType.UINT16BE},
+            {name: 'ieee', parameterType: ParameterType.IEEEADDR},
+        ],
+    },
+
     // [TelinkMessageCode.PermitJoinStatus]: {
     //     response: [
     //         {name: 'status', parameterType: ParameterType.UINT8}, // <status:uint8_t>
@@ -152,7 +197,7 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     //         // <destination address mode: uint8_t>
     //         {name: 'destinationAddress', parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY},
     //         // <destination address: uint16_t or uint64_t>
-    //         // {name: 'payloadSize', parameterType:'UINT8'}, // <payload size : uint8_t>
+    //         // {name: 'payloadSize', parameterType: ParameterType.UINT8}, // <payload size : uint8_t>
     //         {name: 'payload', parameterType: ParameterType.BUFFER_RAW}, // <payload : data each element is
     //         // uint8_t>
     //     ]
@@ -186,8 +231,8 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
     // [TelinkMessageCode.APSDataACK]: {
     //     response: [
     //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         // {name: 'sourceEndpoint', parameterType:'UINT8'}, // <source endpoint: uint8_t>
-    //         // {name: 'destinationAddressMode', parameterType:'UINT8'},
+    //         // {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
+    //         // {name: 'destinationAddressMode', parameterType: ParameterType.UINT8},
     //         // // <destination address mode: uint8_t>
     //         {name: 'destinationAddress', parameterType: ParameterType.UINT16BE},
     //         {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>

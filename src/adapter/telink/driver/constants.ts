@@ -46,13 +46,14 @@ export enum NODE_LOGICAL_TYPE {
 
 
 // TODO: use e1-e5
-// export enum STATUS {
-//     E_SL_MSG_STATUS_SUCCESS,
-//     E_SL_MSG_STATUS_INCORRECT_PARAMETERS,
-//     E_SL_MSG_STATUS_UNHANDLED_COMMAND,
-//     E_SL_MSG_STATUS_BUSY,
-//     E_SL_MSG_STATUS_STACK_ALREADY_STARTED,
-// }
+export enum STATUS {
+    ZBHCI_MSG_STATUS_SUCCESS,
+    ZBHCI_MSG_STATUS_INCORRECT_PARAMETERS,
+    ZBHCI_MSG_STATUS_UNHANDLED_COMMAND,
+    ZBHCI_MSG_STATUS_BUSY,
+    ZBHCI_MSG_STATUS_NO_MEMORY,
+    ZBHCI_MSG_STATUS_STACK_ALREADY_STARTED,
+}
 
 export enum PERMIT_JOIN_STATUS {
     on = 1, // devices are allowed to join network
@@ -210,7 +211,10 @@ export enum TelinkCommandCode {
 	ZBHCI_CMD_MGMT_DIRECT_JOIN_REQ			= 0x0033,
 	ZBHCI_CMD_MGMT_PERMIT_JOIN_REQ			= 0x0034,
 	ZBHCI_CMD_MGMT_NWK_UPDATE_REQ			= 0x0035,
+
+	ZBHCI_CMD_GET_LOCAL_NWK_INFO_REQ		= 0x0045,
     
+    ZBHCI_CMD_RAW_MODE					    = 0x0099,
     
 	ZBHCI_CMD_ZCL_BASIC_RESET				= 0x0110,
     ZBHCI_CMD_ZCL_GROUP_ADD					= 0x0120,
@@ -225,6 +229,7 @@ export enum TelinkCommandCode {
 
 	ZBHCI_CMD_BINDING_RSP					= 0x8020,
 	ZBHCI_CMD_UNBINDING_RSP					= 0x0021,
+
 
     // GetNetworkState = 0x0009,
     // RawMode = 0x0002,
@@ -271,6 +276,9 @@ export enum TelinkCommandCode {
 
 export enum TelinkMessageCode {
 	ZBHCI_CMD_ACKNOWLEDGE					= 0x8000,
+
+	ZBHCI_CMD_RAW_DATA_MSG					= 0x8800,
+    
 	ZBHCI_CMD_DATA_CONFIRM					= 0x8200,//data confirm
 	ZBHCI_CMD_MAC_ADDR_IND					= 0x8201,
 	ZBHCI_CMD_NODE_LEAVE_IND				= 0x8202,
@@ -287,6 +295,7 @@ export enum TelinkMessageCode {
 
     ZBHCI_CMD_MGMT_LEAVE_RSP                = 0x8032,
     ZBHCI_CMD_NODES_DEV_ANNCE_IND			= 0x8043,
+    ZBHCI_CMD_GET_LOCAL_NWK_INFO_RSP		= 0x8045,
 
     ZBHCI_CMD_ZCL_REPORT_MSG_RCV            = 0x8104,
 

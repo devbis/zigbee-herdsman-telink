@@ -8,6 +8,7 @@ import {Direction, Foundation, FrameType, ZclFrame, ZclHeader} from '../../../zc
 import {Queue, Wait, Waitress} from '../../../utils';
 import Driver from '../driver/telink';
 import {
+    STATUS,
     ADDRESS_MODE,
     coordinatorEndpoints,
     DEVICE_TYPE,
@@ -62,6 +63,10 @@ class TelinkAdapter extends Adapter {
         this.driver.on('close', this.onTelinkClose.bind(this));
     }
 
+    private sleep(ms: number) : Promise<void>{
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     /**
      * Adapter methods
      */
@@ -69,6 +74,7 @@ class TelinkAdapter extends Adapter {
         let startResult: TsType.StartResult = 'resumed';
         try {
             await this.driver.open();
+            await this.sleep(50);
             logger.info("Connected to Telink adapter successfully.", NS);
 
             // const resetResponse = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ, {}, 5000)
@@ -79,7 +85,7 @@ class TelinkAdapter extends Adapter {
                 // startResult = 'reset';
             // }
             await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION);
-            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET, {mode: 1});
+            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET, { mode: 0x01 });
 
             // await this.driver.sendCommand(TelinkCommandCode.RawMode, {enabled: 0x01});
             // @todo check
@@ -87,6 +93,7 @@ class TelinkAdapter extends Adapter {
                 // deviceType: DEVICE_TYPE.coordinator
             // });
             await this.initNetwork();
+            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_RAW_MODE, { raw: 0x01 });
 
             // await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD, {
             //     addressMode: ADDRESS_MODE.short ,
@@ -114,15 +121,14 @@ class TelinkAdapter extends Adapter {
 
     public async getCoordinator(): Promise<TsType.Coordinator> {
         logger.debug('getCoordinator', NS);
-        // const networkResponse: any = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NWK_ADDR_REQ);
+        const networkResponse: any = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_GET_LOCAL_NWK_INFO_REQ);
 
         // @TODO deal hardcoded endpoints, made by analogy with deconz
         // polling the coordinator on some firmware went into a memory leak, so we don't ask this info
         const response: TsType.Coordinator = {
-            networkAddress: 0x0000,
+            networkAddress: networkResponse.payload.nwkAddr,
             manufacturerID: 0x1141,
-            ieeeAddr: '0xa4c1380000000000', // FIXME
-            // ieeeAddr: networkResponse.payload.extendedAddress,
+            ieeeAddr: networkResponse.payload.ieee,
             endpoints: coordinatorEndpoints
         };
         logger.debug(`getCoordinator ${JSON.stringify(response)}`, NS);
@@ -174,7 +180,7 @@ class TelinkAdapter extends Adapter {
 
         // const result = await this.driver.sendCommand(TelinkCommandCode.PermitJoinStatus, {});
         // Suitable only for the coordinator, not the entire network or point-to-point for routers
-        this.joinPermitted = result.payload.status === 0;
+        this.joinPermitted = result.payload.status === STATUS.ZBHCI_MSG_STATUS_SUCCESS;
     };
 
     public async addInstallCode(ieeeAddress: string, key: Buffer): Promise<void> {
@@ -194,21 +200,15 @@ class TelinkAdapter extends Adapter {
 
     public async getNetworkParameters(): Promise<TsType.NetworkParameters> {
         logger.debug('getNetworkParameters', NS);
-        const resultPayload: TsType.NetworkParameters = {
-            panID: <number>0x0011223344556677,
-            extendedPanID: <number>0x0011223344556677,
-            channel: <number>11,
-        }
-        return Promise.resolve(resultPayload)
-        // return this.driver.sendCommand(TelinkCommandCode.GetNetworkState, {}, 10000)
-        //     .then((NetworkStateResponse) => {
-        //         const resultPayload: TsType.NetworkParameters = {
-        //             panID: <number>NetworkStateResponse.payload.PANID,
-        //             extendedPanID: <number>NetworkStateResponse.payload.ExtPANID,
-        //             channel: <number>NetworkStateResponse.payload.Channel
-        //         }
-        //         return Promise.resolve(resultPayload)
-        //     }).catch(() => Promise.reject(new Error("Get network parameters failed")));
+        return this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_GET_LOCAL_NWK_INFO_REQ, {}, 10000)
+            .then((NetworkStateResponse) => {
+                const resultPayload: TsType.NetworkParameters = {
+                    panID: <number>NetworkStateResponse.payload.panID,
+                    extendedPanID: <number>NetworkStateResponse.payload.extPanID,
+                    channel: <number>11 // TODO: FIXME!!!!
+                }
+                return Promise.resolve(resultPayload)
+            }).catch(() => Promise.reject(new Error("Get network parameters failed")));
     };
 
     /**
@@ -275,7 +275,7 @@ class TelinkAdapter extends Adapter {
                     );
                     const data = <Buffer>resultPayload.payload.payload;
 
-                    if (data[1] !== 0) { // status
+                    if (data[1] !== STATUS.ZBHCI_MSG_STATUS_SUCCESS) { // status
                         throw new Error(`LQI for '${networkAddress}' failed`);
                     }
                     const tableList: Buffer[] = [];
@@ -343,11 +343,10 @@ class TelinkAdapter extends Adapter {
                     }
                 );
 
-                const data: Buffer = <Buffer>nodeDescriptorResponse.payload.payload;
-                const buf = data;
-                const logicaltype = (data[4] & 7);
+                const logicalType = (<number>nodeDescriptorResponse.payload.logicalType & 7);
+                const manufacturerCode = <number>nodeDescriptorResponse.payload.manufacturerCode;
                 let type: DeviceType = 'Unknown';
-                switch (logicaltype) {
+                switch (logicalType) {
                     case 1:
                         type = 'Router';
                         break;
@@ -359,12 +358,11 @@ class TelinkAdapter extends Adapter {
                         break;
 
                 }
-                const manufacturer = buf.readUInt16LE(7);
 
                 logger.debug("RECEIVING NODE_DESCRIPTOR - addr: 0x" + networkAddress.toString(16)
-                    + " type: " + type + " manufacturer: 0x" + manufacturer.toString(16), NS);
+                    + " type: " + type + " manufacturer: 0x" + manufacturerCode.toString(16), NS);
 
-                return {manufacturerCode: manufacturer, type};
+                return {manufacturerCode, type};
             } catch (error) {
                 const msg = "RECEIVING NODE_DESCRIPTOR FAILED - addr: 0x" + networkAddress.toString(16) + " " + error;
                 logger.error(msg, NS);
@@ -383,10 +381,10 @@ class TelinkAdapter extends Adapter {
             try {
                 const result = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_REQ, payload);
                 const buf = Buffer.from(<Buffer>result.payload.payload);
-                const epCount = buf.readUInt8(4);
+                const epCount = buf.readUInt8(0);
                 const epList = [];
                 for (let i = 0; i < epCount; i++) {
-                    epList.push(buf.readUInt8(i));
+                    epList.push(buf.readUInt8(i + 1));
                 }
 
                 const payloadAE: TsType.ActiveEndpoints = {
@@ -784,7 +782,7 @@ class TelinkAdapter extends Adapter {
             data: data.telinkObject.payload.payload,
             header: ZclHeader.fromBuffer(data.telinkObject.payload.payload),
             endpoint: <number>data.telinkObject.payload.sourceEndpoint,
-            linkquality: data.telinkObject.frame.readRSSI(),
+            linkquality: data.telinkObject?.payload?.lqi || null,
             groupID: null, // @todo
             wasBroadcast: false, // TODO
             destinationEndpoint: <number>data.telinkObject.payload.destinationEndpoint,

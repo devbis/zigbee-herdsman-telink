@@ -20,8 +20,8 @@ enum ParameterType {
     ADDRESS_WITH_TYPE_DEPENDENCY = 101,
     RAW = 102,
 
-    // /!\ TODO missing but used in code, IDs assigned for proper compiling, NOT based on spec, needs updating
-    // /!\      some also don't have proper read/write in BuffaloZiGate
+    SHORT_OR_IEEE_LE = 245,
+    ADDRESS_WITH_TYPE_DEPENDENCY_LE = 246,
     BUFFER_RAW = 247,
     UINT16BE = 248,
     UINT32BE = 249,

@@ -69,10 +69,11 @@ class TelinkObject {
 
     public static fromTelinkFrame(frame: TelinkFrame): TelinkObject {
         const code = frame.readMsgCode();
-        return TelinkObject.fromBufer(code, frame.msgPayloadBytes, frame);
+        debug.log('fromTelinkFrame: %o', frame);
+        return TelinkObject.fromBuffer(code, frame.msgPayloadBytes, frame);
     }
 
-    public static fromBufer(code: number, buffer: Buffer, frame?: TelinkFrame): TelinkObject {
+    public static fromBuffer(code: number, buffer: Buffer, frame?: TelinkFrame): TelinkObject {
         const msg = TelinkMessage[code];
 
         if (!msg) {

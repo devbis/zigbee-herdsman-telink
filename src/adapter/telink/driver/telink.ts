@@ -10,12 +10,13 @@ import SocketPortUtils from "../../socketPortUtils";
 import net from "net";
 import {Queue, Wait} from "../../../utils";
 import {SerialPortOptions} from "../../tstype";
-import {TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./constants";
+import {STATUS, TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./constants";
 import TelinkObject from "./telinkObject";
-import {DataType, Direction, FrameType, ZclFrame} from "../../../zcl";
+import {DataType, Direction, FrameType, ZclFrame, ZclHeader} from "../../../zcl";
 import Waitress from "../../../utils/waitress";
 import {equal, TelinkResponseMatcher, TelinkResponseMatcherRule} from "./commandType";
 import TelinkFrame from "./frame";
+import TelinkParser from "./parser";
 import { ZclPayload } from 'src/adapter/events';
 import BuffaloZcl from '../../../zcl/buffaloZcl';
 
@@ -55,7 +56,8 @@ export default class Telink extends EventEmitter {
     // private timeoutResetTimeout: any;
     // private apsRequestFreeSlots: number;
 
-    private parser: EventEmitter;
+    // private parser: EventEmitter;
+    private parser: TelinkParser;
     private serialPort: SerialPort;
     private seqNumber: number;
     private portType: 'serial' | 'socket';
@@ -136,11 +138,11 @@ export default class Telink extends EventEmitter {
 
                 if (telinkObject.command.waitStatus !== false) {
                     let statusResponse: TelinkObject = await resultPromise;
-                    // if (statusResponse.payload.status !== STATUS.E_SL_MSG_STATUS_SUCCESS) {
-                    //     waitersId.map((id) => this.waitress.remove(id));
-                    //     return Promise.reject(statusResponse);
-                    // } else
-                    if (waiters.length === 0) {
+                    const { status } = statusResponse.payload;
+                    if (status !== STATUS.ZBHCI_MSG_STATUS_SUCCESS) {
+                        waitersId.map((id) => this.waitress.remove(id));
+                        return Promise.reject({statusResponse, message: `Not successful status: ${STATUS[status]}=${status}`});
+                    } else if (waiters.length === 0) {
                         return Promise.resolve(statusResponse);
                     }
                 }
@@ -215,12 +217,10 @@ export default class Telink extends EventEmitter {
             lock: false,
             autoOpen: false
         });
-        this.parser = this.serialPort.pipe(
-            new DelimiterParser(
-                {delimiter: [TelinkFrame.STOP_BYTE], includeDelimiter: true}
-            ),
-        );
-        this.parser.on('data', this.onSerialData.bind(this));
+        this.parser = new TelinkParser();
+        this.serialPort.pipe(this.parser);
+        debug.log(`parser= ${this.parser}`);
+        this.parser.on('parsed', this.onParsedFrame.bind(this));
 
         this.portWrite = this.serialPort;
         return new Promise((resolve, reject): void => {
@@ -247,45 +247,45 @@ export default class Telink extends EventEmitter {
     }
 
     private async openSocketPort(): Promise<void> {
-        const info = SocketPortUtils.parseTcpPath(this.path);
-        debug.log(`Opening TCP socket with ${info.host}:${info.port}`);
+        // const info = SocketPortUtils.parseTcpPath(this.path);
+        // debug.log(`Opening TCP socket with ${info.host}:${info.port}`);
 
-        this.socketPort = new net.Socket();
-        this.socketPort.setNoDelay(true);
-        this.socketPort.setKeepAlive(true, 15000);
+        // this.socketPort = new net.Socket();
+        // this.socketPort.setNoDelay(true);
+        // this.socketPort.setKeepAlive(true, 15000);
 
 
-        this.parser = this.socketPort.pipe(
-            new DelimiterParser({delimiter: [TelinkFrame.STOP_BYTE], includeDelimiter: true}),
-        );
-        this.parser.on('data', this.onSerialData.bind(this));
+        // this.parser = this.socketPort.pipe(
+        //     new DelimiterParser({delimiter: [TelinkFrame.STOP_BYTE], includeDelimiter: true}),
+        // );
+        // this.parser.on('parsed', this.onSerialData.bind(this));
 
-        this.portWrite = this.socketPort;
-        return new Promise((resolve, reject): void => {
-            this.socketPort.on('connect', function () {
-                debug.log('Socket connected');
-            });
+        // this.portWrite = this.socketPort;
+        // return new Promise((resolve, reject): void => {
+        //     this.socketPort.on('connect', function () {
+        //         debug.log('Socket connected');
+        //     });
 
-            // eslint-disable-next-line
-            const self = this;
+        //     // eslint-disable-next-line
+        //     const self = this;
 
-            this.socketPort.on('ready', async function () {
-                debug.log('Socket ready');
-                self.initialized = true;
-                resolve();
-            });
+        //     this.socketPort.on('ready', async function () {
+        //         debug.log('Socket ready');
+        //         self.initialized = true;
+        //         resolve();
+        //     });
 
-            this.socketPort.once('close', this.onPortClose);
+        //     this.socketPort.once('close', this.onPortClose);
 
-            this.socketPort.on('error', (error) => {
-                debug.log('Socket error', error);
-                // reject(new Error(`Error while opening socket`));
-                reject();
-                self.initialized = false;
-            });
+        //     this.socketPort.on('error', (error) => {
+        //         debug.log('Socket error', error);
+        //         // reject(new Error(`Error while opening socket`));
+        //         reject();
+        //         self.initialized = false;
+        //     });
 
-            this.socketPort.connect(info.port, info.host);
-        });
+        //     this.socketPort.connect(info.port, info.host);
+        // });
     }
 
     private onSerialError(err: string): void {
@@ -298,13 +298,8 @@ export default class Telink extends EventEmitter {
         this.emit('close');
     }
 
-    private onSerialData(buffer: Buffer): void {
+    private onParsedFrame(frame: TelinkFrame): void {
         try {
-            // debug.log(`--- parseNext `, buffer);
-
-            const frame = new TelinkFrame(buffer);
-            if (!(frame instanceof TelinkFrame)) return; // @Todo fix
-
             const code = frame.readMsgCode();
             const msgName = (TelinkMessageCode[code] ? TelinkMessageCode[code] : '') + ' 0x' + zeroPad(code);
 
@@ -312,10 +307,24 @@ export default class Telink extends EventEmitter {
 
             try {
                 const telinkObject = TelinkObject.fromTelinkFrame(frame);
-                debug.log('%o', telinkObject.payload);
+                debug.log('telinkObject=%o', telinkObject.payload);
                 this.waitress.resolve(telinkObject);
 
                 switch (code) {
+                    case TelinkMessageCode.ZBHCI_CMD_RAW_DATA_MSG:
+                        try {
+                            const zclFrame = ZclFrame.fromBuffer(
+                                <number>telinkObject.payload.clusterID,
+                                ZclHeader.fromBuffer(<Buffer>telinkObject.payload.payload.slice(0, 4)),
+                                <Buffer>telinkObject.payload.payload.slice(4),
+                                {},
+                            );
+                            this.emit('received', {telinkObject, zclFrame});
+                        } catch (error) {
+                            debug.error("could not parse zclFrame: " + error);
+                            this.emit('receivedRaw', {telinkObject});
+                        }
+                        break;
                     case TelinkMessageCode.ZBHCI_CMD_NODES_DEV_ANNCE_IND:
                         {
                             let networkAddress = telinkObject.payload.shortAddress;

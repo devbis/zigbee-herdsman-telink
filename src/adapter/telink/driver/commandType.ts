@@ -66,6 +66,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
         request: [],
         response: [
             [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE},
                 {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION},
             ],
         ],
@@ -76,7 +77,16 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
         ],
         response: [
             [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE},
                 {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET},
+            ],
+        ],
+    },
+    [TelinkCommandCode.ZBHCI_CMD_GET_LOCAL_NWK_INFO_REQ]: {  // 0x0045
+        request: [],
+        response: [
+            [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_GET_LOCAL_NWK_INFO_RSP},
             ],
         ],
     },
@@ -84,6 +94,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
         request: [],
         response: [
             [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE},
                 {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ},
             ],
         ],
@@ -110,6 +121,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
         ],
         response: [
             [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE},
                 {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_MGMT_PERMIT_JOIN_REQ},
             ],
         ],
@@ -133,6 +145,18 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
         ],
     },
 
+    [TelinkCommandCode.ZBHCI_CMD_RAW_MODE]: {  // 0x0099
+        request: [
+            {name: 'raw', parameterType: 'UINT8'}, //<mode: uint8_t>
+        ],
+        response: [
+            [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE},
+                {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_RAW_MODE},
+            ],
+        ],
+    },
+
     [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NODE_DESC_REQ]: {
         request: [
             {name: 'destShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
@@ -150,11 +174,6 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
                     matcher: equal,
                     expectedProperty: 'payload.targetShortAddress'
                 },
-                // {
-                //     receivedProperty: 'payload.clusterID',
-                //     matcher: equal,
-                //     value: 0x8002
-                // },
             ],
         ]
     },
@@ -182,6 +201,24 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
                 //     value: 0x8002
                 // },
             ],
+            // [
+            //     {
+            //         receivedProperty: 'code',
+            //         matcher: equal,
+            //         value: TelinkMessageCode.ZBHCI_CMD_RAW_DATA_MSG,
+
+            //     },
+            //     {
+            //         receivedProperty: 'payload.sourceAddress',
+            //         matcher: equal,
+            //         expectedProperty: 'payload.targetShortAddress'
+            //     },
+            //     // {
+            //     //     receivedProperty: 'payload.clusterID',
+            //     //     matcher: equal,
+            //     //     value: 0x8002
+            //     // },
+            // ],
         ]
     },
     [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_REQ]: {

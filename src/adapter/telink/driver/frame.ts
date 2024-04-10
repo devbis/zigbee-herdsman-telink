@@ -83,7 +83,7 @@ export default class TelinkFrame {
             debug.log(`decodedFrame %o`, decodedFrame);
 
             if (!TelinkFrame.isValid(frame)) {
-                debug.error('Provided frame is not a valid ZiGate frame.');
+                debug.error('Provided frame is not a valid Telink frame.');
                 return;
             }
 
@@ -199,7 +199,7 @@ export default class TelinkFrame {
 
         checksum = this.msgCodeBytes.reduce(xor, checksum);
         checksum = this.msgLengthBytes.reduce(xor, checksum);
-        checksum = this.rssiBytes.reduce(xor, checksum);
+        // checksum = this.rssiBytes.reduce(xor, checksum);
         checksum = this.msgPayloadBytes.reduce(xor, checksum);
 
         return checksum;

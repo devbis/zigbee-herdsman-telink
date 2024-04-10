@@ -58,6 +58,13 @@ class BuffaloTelink extends Buffalo {
             const addressMode = this.buffer.readUInt8(this.position - 1);
             return addressMode == 3 ? this.writeIeeeAddr(value) : this.writeUInt16BE(value);
         }
+        case ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY_LE: {
+            const addressMode = this.buffer.readUInt8(this.position - 1);
+            if (addressMode == 3) {
+                return this.writeIeeeAddr(value)
+            }
+            return this.writeUInt16(value);
+        }
         case ParameterType.RAW: {
             return this.writeRaw(value);
         }
@@ -140,7 +147,20 @@ class BuffaloTelink extends Buffalo {
         }
         case ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY: {
             const addressMode = this.buffer.readUInt8(this.position - 1);
-            return addressMode == 3 ? this.readIeeeAddr() : this.readUInt16BE();
+            if (addressMode == 3) {
+                return this.readIeeeAddr();
+            }
+            const addr = this.readUInt16BE()
+            this.position += 6;
+            return addr
+        }
+        case ParameterType.SHORT_OR_IEEE_LE: {
+            if (this.buffer.readUInt8(this.position+5) !== 0 || this.buffer.readUInt8(this.position+4) !== 0) {
+                return this.readIeeeAddr();
+            }
+            const addr = this.readUInt16()
+            this.position += 6;
+            return addr
         }
         case ParameterType.UINT16BE: {
            return this.readUInt16BE();
