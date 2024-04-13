@@ -782,7 +782,7 @@ class TelinkAdapter extends Adapter {
             data: data.telinkObject.payload.payload,
             header: ZclHeader.fromBuffer(data.telinkObject.payload.payload),
             endpoint: <number>data.telinkObject.payload.sourceEndpoint,
-            linkquality: data.telinkObject?.payload?.lqi || null,
+            linkquality: data.telinkObject?.payload?.lqi || 0,
             groupID: null, // @todo
             wasBroadcast: false, // TODO
             destinationEndpoint: <number>data.telinkObject.payload.destinationEndpoint,

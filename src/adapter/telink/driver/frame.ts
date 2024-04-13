@@ -1,8 +1,9 @@
 /* istanbul ignore file */
 /* eslint-disable */
-import {Debug} from '../debug';
 
-const debug = Debug('driver:frame');
+import {logger} from "../../../utils/logger";
+
+const NS = 'zh:telink:frame';
 
 enum TelinkFrameChunkSize {
     UInt8 = 1,
@@ -73,17 +74,16 @@ export default class TelinkFrame {
     msgLengthBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt16);
     checksumBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt8);
     msgPayloadBytes: Buffer = Buffer.alloc(0);
-    rssiBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt8); // TODO: remove
 
     msgLengthOffset = 0;
 
     constructor(frame?: Buffer) {
         if (frame !== undefined) {
             const decodedFrame = decodeFrame(frame);
-            debug.log(`decodedFrame %o`, decodedFrame);
+            // debug.log(`decodedFrame %o`, decodedFrame);
 
             if (!TelinkFrame.isValid(frame)) {
-                debug.error('Provided frame is not a valid Telink frame.');
+                logger.error('Provided frame is not a valid Telink frame.', NS);
                 return;
             }
 
@@ -91,13 +91,13 @@ export default class TelinkFrame {
 
             try {
                 if(this.readMsgCode() !== 0x8200)
-                    debug.log(`%o`, this);
+                    logger.info(`${JSON.stringify(this)}`, NS);
             } catch (e) {
-                debug.error(e)
+                logger.error(e, NS);
             }
 
             if (this.readChecksum() !== this.calcChecksum()) {
-                debug.error(`Provided frame has an invalid checksum.`);
+                logger.error(`Provided frame has an invalid checksum.`, NS);
                 return;
             }
         }
@@ -112,7 +112,6 @@ export default class TelinkFrame {
         this.msgLengthBytes = getFrameChunk(frame, 3, this.msgLengthBytes.length);
         this.checksumBytes = getFrameChunk(frame, 5, this.checksumBytes.length);
         this.msgPayloadBytes = getFrameChunk(frame, 6, this.readMsgLength());
-        // this.rssiBytes = getFrameChunk(frame, 6 + this.readMsgLength(), TelinkFrameChunkSize.UInt8);
     }
 
     toBuffer(): Buffer {
@@ -184,22 +183,11 @@ export default class TelinkFrame {
         return this;
     }
 
-    readRSSI(): number {
-        return readBytes(this.rssiBytes);
-    }
-
-    writeRSSI(rssi: number): TelinkFrame {
-        this.rssiBytes = Buffer.from([rssi]);
-        this.writeChecksum();
-        return this;
-    }
-
     calcChecksum(): number {
         let checksum = 0x00;
 
         checksum = this.msgCodeBytes.reduce(xor, checksum);
         checksum = this.msgLengthBytes.reduce(xor, checksum);
-        // checksum = this.rssiBytes.reduce(xor, checksum);
         checksum = this.msgPayloadBytes.reduce(xor, checksum);
 
         return checksum;

@@ -3,7 +3,6 @@
 
 import {DelimiterParser} from '@serialport/parser-delimiter'
 import {EventEmitter} from 'events';
-import {Debug} from '../debug';
 import {SerialPort} from '../../serialPort';
 import SerialPortUtils from "../../serialPortUtils";
 import SocketPortUtils from "../../socketPortUtils";
@@ -19,8 +18,9 @@ import TelinkFrame from "./frame";
 import TelinkParser from "./parser";
 import { ZclPayload } from 'src/adapter/events';
 import BuffaloZcl from '../../../zcl/buffaloZcl';
+import {logger} from '../../../utils/logger';
 
-const debug = Debug('driver');
+const NS = 'zh:telink:driver';
 
 const autoDetectDefinitions = [
     // FIXME
@@ -91,20 +91,18 @@ export default class Telink extends EventEmitter {
         const waitersId: number[] = [];
         return await this.queue.execute(async () => {
             try {
-                debug.log(
+                logger.debug(
                     'Send command \x1b[32m>>>> '
                     + TelinkCommandCode[code]
                     + ' 0x' + zeroPad(code)
-                    + ' <<<<\x1b[0m \nPayload: %o',
-                    payload
-                );
+                    + ` <<<<\x1b[0m \nPayload: ${JSON.stringify(payload)}`, NS);
                 const telinkObject = TelinkObject.createRequest(code, payload);
                 const frame = telinkObject.toTelinkFrame();
-                debug.log('%o', frame);
+                logger.debug(`${JSON.stringify(frame)}`, NS);
 
                 const sendBuffer = frame.toBuffer();
-                debug.log('<-- send command ', sendBuffer);
-                debug.log(`DisableResponse: ${disableResponse}`);
+                logger.debug(`<-- send command ${sendBuffer.toString('hex')}`, NS);
+                logger.debug(`DisableResponse: ${disableResponse}`, NS);
 
                 if (!disableResponse && Array.isArray(telinkObject.command.response)) {
                     telinkObject.command.response.forEach((rules) => {
@@ -148,7 +146,7 @@ export default class Telink extends EventEmitter {
                 }
                 return Promise.race(waiters);
             } catch (e) {
-                debug.error('sendCommand error:', e);
+                logger.error(`sendCommand error ${e}`, NS);
                 return Promise.reject(new Error('sendCommand error: ' + e));
             }
         });
@@ -170,7 +168,7 @@ export default class Telink extends EventEmitter {
     }
 
     public close(): Promise<void> {
-        debug.info('close');
+        logger.info('closing', NS);
         return new Promise((resolve, reject) => {
             if (this.initialized) {
                 this.initialized = false;
@@ -207,6 +205,7 @@ export default class Telink extends EventEmitter {
         return this.waitress.waitFor(matcher, timeout);
     }
 
+
     private async openSerialPort(): Promise<void> {
         this.serialPort = new SerialPort({
             path: this.path,
@@ -219,81 +218,73 @@ export default class Telink extends EventEmitter {
         });
         this.parser = new TelinkParser();
         this.serialPort.pipe(this.parser);
-        debug.log(`parser= ${this.parser}`);
         this.parser.on('parsed', this.onParsedFrame.bind(this));
-
         this.portWrite = this.serialPort;
-        return new Promise((resolve, reject): void => {
-            this.serialPort.open(async (err: unknown): Promise<void> => {
-                if (err) {
-                    this.serialPort = null;
-                    this.parser = null;
-                    this.path = null;
-                    this.initialized = false;
-                    const error = `Error while opening serialPort '${err}'`;
-                    debug.error(error);
-                    reject(new Error(error));
-                } else {
-                    debug.log('Successfully connected Telink port \'' + this.path + '\'');
-                    this.serialPort.on('error', (error) => {
-                        debug.error(`serialPort error: ${error}`);
-                    });
-                    this.serialPort.on('close', this.onPortClose.bind(this));
-                    this.initialized = true;
-                    resolve();
-                }
-            });
-        });
+
+        try {
+            await this.serialPort.asyncOpen();
+            logger.debug('Serialport opened', NS);
+
+            this.serialPort.once('close', this.onPortClose.bind(this));
+            this.serialPort.once('error', this.onPortError.bind(this));
+
+            this.initialized = true;
+        } catch (error) {
+            this.initialized = false;
+
+            if (this.serialPort.isOpen) {
+                this.serialPort.close();
+            }
+
+            throw error;
+        }
     }
 
     private async openSocketPort(): Promise<void> {
-        // const info = SocketPortUtils.parseTcpPath(this.path);
-        // debug.log(`Opening TCP socket with ${info.host}:${info.port}`);
+        const info = SocketPortUtils.parseTcpPath(this.path);
+        logger.debug(`Opening TCP socket with ${info.host}:${info.port}`, NS);
 
-        // this.socketPort = new net.Socket();
-        // this.socketPort.setNoDelay(true);
-        // this.socketPort.setKeepAlive(true, 15000);
+        this.socketPort = new net.Socket();
+        this.socketPort.setNoDelay(true);
+        this.socketPort.setKeepAlive(true, 15000);
 
+        this.parser = new TelinkParser();
+        this.socketPort.pipe(this.parser);
+        this.parser.on('parsed', this.onParsedFrame.bind(this));
+        this.portWrite = this.socketPort;
+        return new Promise((resolve, reject): void => {
+            this.socketPort.on('connect', function () {
+                logger.debug('Socket connected', NS);
+            });
 
-        // this.parser = this.socketPort.pipe(
-        //     new DelimiterParser({delimiter: [TelinkFrame.STOP_BYTE], includeDelimiter: true}),
-        // );
-        // this.parser.on('parsed', this.onSerialData.bind(this));
+            // eslint-disable-next-line
+            const self = this;
 
-        // this.portWrite = this.socketPort;
-        // return new Promise((resolve, reject): void => {
-        //     this.socketPort.on('connect', function () {
-        //         debug.log('Socket connected');
-        //     });
+            this.socketPort.on('ready', async function () {
+                logger.debug('Socket ready', NS);
+                self.initialized = true;
+                resolve();
+            });
 
-        //     // eslint-disable-next-line
-        //     const self = this;
+            this.socketPort.once('close', this.onPortClose.bind(this));
 
-        //     this.socketPort.on('ready', async function () {
-        //         debug.log('Socket ready');
-        //         self.initialized = true;
-        //         resolve();
-        //     });
+            this.socketPort.on('error', (error) => {
+                logger.error(`Socket error ${error}`, NS);
+                // reject(new Error(`Error while opening socket`));
+                reject();
+                self.initialized = false;
+            });
 
-        //     this.socketPort.once('close', this.onPortClose);
-
-        //     this.socketPort.on('error', (error) => {
-        //         debug.log('Socket error', error);
-        //         // reject(new Error(`Error while opening socket`));
-        //         reject();
-        //         self.initialized = false;
-        //     });
-
-        //     this.socketPort.connect(info.port, info.host);
-        // });
+            this.socketPort.connect(info.port, info.host);
+        });
     }
 
-    private onSerialError(err: string): void {
-        debug.error('serial error: ', err);
+    private onPortError(error: Error): void {
+        logger.error(`Port error: ${error}`, NS);
     }
 
     private onPortClose(): void {
-        debug.log('serial closed');
+        logger.debug('Port closed', NS);
         this.initialized = false;
         this.emit('close');
     }
@@ -303,11 +294,11 @@ export default class Telink extends EventEmitter {
             const code = frame.readMsgCode();
             const msgName = (TelinkMessageCode[code] ? TelinkMessageCode[code] : '') + ' 0x' + zeroPad(code);
 
-            debug.log(`--> parsed frame \x1b[1;34m>>>> ${msgName} <<<<\x1b[0m `);
+            logger.debug(`--> parsed frame \x1b[1;34m>>>> ${msgName} <<<<\x1b[0m `, NS);
 
             try {
                 const telinkObject = TelinkObject.fromTelinkFrame(frame);
-                debug.log('telinkObject=%o', telinkObject.payload);
+                logger.debug(`telinkObject=${JSON.stringify(telinkObject.payload)}`, NS);
                 this.waitress.resolve(telinkObject);
 
                 switch (code) {
@@ -321,7 +312,7 @@ export default class Telink extends EventEmitter {
                             );
                             this.emit('received', {telinkObject, zclFrame});
                         } catch (error) {
-                            debug.error("could not parse zclFrame: " + error);
+                            logger.error("could not parse zclFrame: " + error, NS);
                             this.emit('receivedRaw', {telinkObject});
                         }
                         break;
@@ -421,11 +412,11 @@ export default class Telink extends EventEmitter {
                 }
 
             } catch (error) {
-                debug.error('Parsing error: %o', error)
+                logger.error(`Parsing error: ${error}`, NS);
             }
 
         } catch (error) {
-            debug.error(`Error while parsing Frame '${error.stack}'`);
+            logger.error(`Error while parsing Frame '${error.stack}'`, NS);
         }
     }
 
@@ -445,7 +436,7 @@ export default class Telink extends EventEmitter {
                     expectedValue = rule.value;
                 }
                 const receivedValue = resolve(rule.receivedProperty, telinkObject);
-                debug.log(`waitressValidator: ${rule.receivedProperty}=${receivedValue}, ${expectedValue} %o: ${rule.matcher(expectedValue, receivedValue)}`, telinkObject);
+                logger.debug(`waitressValidator: ${rule.receivedProperty}=${receivedValue}, ${expectedValue} ${JSON.stringify(telinkObject)}}: ${rule.matcher(expectedValue, receivedValue)}`, NS);
                 return rule.matcher(expectedValue, receivedValue);
             } catch (e) {
                 return false;

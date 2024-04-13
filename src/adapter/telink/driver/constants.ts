@@ -212,6 +212,8 @@ export enum TelinkCommandCode {
 	ZBHCI_CMD_MGMT_PERMIT_JOIN_REQ			= 0x0034,
 	ZBHCI_CMD_MGMT_NWK_UPDATE_REQ			= 0x0035,
 
+	// ZBHCI_CMD_AF_DATA_SEND_TEST_REQ		    = 0x0044,
+	ZBHCI_CMD_AF_DATA_SEND_REQ  		    = 0x0044,
 	ZBHCI_CMD_GET_LOCAL_NWK_INFO_REQ		= 0x0045,
     
     ZBHCI_CMD_RAW_MODE					    = 0x0099,
@@ -225,52 +227,7 @@ export enum TelinkCommandCode {
 	// ZBHCI_CMD_ZCL_GROUP_ADD_IF_IDENTIFY,
 
     ZBHCI_CMD_BINDING_REQ					= 0x0020,
-	ZBHCI_CMD_UNBINDING_REQ					= 0x0021,
-
-	ZBHCI_CMD_BINDING_RSP					= 0x8020,
-	ZBHCI_CMD_UNBINDING_RSP					= 0x0021,
-
-
-    // GetNetworkState = 0x0009,
-    // RawMode = 0x0002,
-    // SetExtendedPANID = 0x0020,
-    // SetChannelMask = 0x0021,
-    // GetVersion = 0x0010,
-    // Reset = 0x0011,
-    // ErasePersistentData = 0x0012,
-    // RemoveDevice = 0x0026,
-    // PermitJoin = 0x0049,
-    // RawAPSDataRequest = 0x0530,
-    // GetTimeServer = 0x0017,
-    // SetTimeServer = 0x0016,
-    // PermitJoinStatus = 0x0014,
-    // GetDevicesList = 0x0015,
-
-    // StartNetwork = 0x0024,
-    // StartNetworkScan = 0x0025,
-    // SetCertification = 0x0019,
-    // Bind = 0x0030,
-    // UnBind = 0x0031,
-
-    // // ResetFactoryNew = 0x0013,
-    // OnOff = 0x0092,
-    // OnOffTimed = 0x0093,
-    // ActiveEndpoint = 0x0045,
-    // AttributeDiscovery = 0x0140,
-    // AttributeRead = 0x0100,
-    // AttributeWrite = 0x0110,
-    // DescriptorComplex = 0x0531,
-    // NodeDescriptor = 0x0042,
-    // PowerDescriptor = 0x0044,
-    // SimpleDescriptor = 0x0043,
-    // SetDeviceType = 0x0023,
-    // IEEEAddress = 0x0041,
-    // LED = 0x0018,
-    // SetTXpower = 0x0806,
-    // ManagementLeaveRequest = 0x0047,
-    // ManagementLQI = 0x004E,
-    // SetSecurityStateKey = 0x0022,
-    // AddGroup = 0x0060,
+	ZBHCI_CMD_UNBINDING_REQ					= 0x0021
 }
 
 
@@ -293,42 +250,19 @@ export enum TelinkMessageCode {
 	ZBHCI_CMD_DISCOVERY_MATCH_DESC_RSP		= 0x8014,
 	ZBHCI_CMD_DISCOVERY_ACTIVE_EP_RSP		= 0x8015,
 
+    ZBHCI_CMD_BINDING_RSP					= 0x8020,
+	ZBHCI_CMD_UNBINDING_RSP					= 0x0021,
+
     ZBHCI_CMD_MGMT_LEAVE_RSP                = 0x8032,
     ZBHCI_CMD_NODES_DEV_ANNCE_IND			= 0x8043,
+	ZBHCI_CMD_AF_DATA_SEND_RSP  			= 0x8044,
     ZBHCI_CMD_GET_LOCAL_NWK_INFO_RSP		= 0x8045,
 
     ZBHCI_CMD_ZCL_REPORT_MSG_RCV            = 0x8104,
 
 	ZBHCI_CMD_OTA_START_RESPONSE			= 0x8210,
 	ZBHCI_CMD_OTA_BLOCK_REQUEST				= 0x8211,
-	ZBHCI_CMD_OTA_END_STATUS				= 0x8212,
-
-    // DeviceAnnounce = 0x004D,
-    // Status = 0x8000,
-    // LOG = 0x8001,
-    // DataIndication = 0x8002,
-    // NodeClusterList = 0x8003,
-    // NodeAttributeList = 0x8004,
-    // NodeCommandIDList = 0x8005,
-    // SimpleDescriptorResponse = 0x8043,
-    // NetworkState = 0x8009,
-    // VersionList = 0x8010,
-    // APSDataACK = 0x8011,
-    // APSDataConfirm = 0x8012,
-    // APSDataConfirmFailed = 0x8702,
-    // NetworkJoined = 0x8024,
-    // LeaveIndication = 0x8048,
-    // RouterDiscoveryConfirm = 0x8701,
-    // PermitJoinStatus = 0x8014,
-    // GetTimeServer = 0x8017,
-    // ManagementLQIResponse = 0x804E,
-    // ManagementLeaveResponse = 0x8047,
-    // PDMEvent = 0x8035,
-    // PDMLoaded = 0x0302,
-    // RestartNonFactoryNew = 0x8006,
-    // RestartFactoryNew = 0x8007,
-    // ExtendedStatusCallBack = 0x9999,
-    // AddGroupResponse = 0x8060,
+	ZBHCI_CMD_OTA_END_STATUS				= 0x8212
 }
 
 // eslint-disable-next-line

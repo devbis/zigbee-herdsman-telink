@@ -5,14 +5,14 @@ import BuffaloTelink, {BuffaloTelinkOptions} from './buffaloTelink';
 import {TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./constants";
 import {TelinkMessage, TelinkMessageParameter} from "./messageType";
 import {TelinkCommand, TelinkCommandParameter, TelinkCommandType} from "./commandType";
-import {Debug} from '../debug';
+import {logger} from '../../../utils/logger';
 import ParameterType from "./parameterType";
 
 type TelinkCode = TelinkCommandCode | TelinkMessageCode;
 type TelinkParameter = TelinkCommandParameter | TelinkMessageParameter;
 
 
-const debug = Debug('driver:TelinkObject');
+const NS = 'zh:telink:object';
 
 const BufferAndListTypes: ParameterType[] = [
     ParameterType.BUFFER, ParameterType.BUFFER8, ParameterType.BUFFER16,
@@ -69,7 +69,7 @@ class TelinkObject {
 
     public static fromTelinkFrame(frame: TelinkFrame): TelinkObject {
         const code = frame.readMsgCode();
-        debug.log('fromTelinkFrame: %o', frame);
+        logger.debug(`fromTelinkFrame: ${JSON.stringify(frame)}`, NS);
         return TelinkObject.fromBuffer(code, frame.msgPayloadBytes, frame);
     }
 
@@ -111,17 +111,14 @@ class TelinkObject {
             try {
                 result[parameter.name] = buffalo.read(parameter.parameterType, options);
             } catch (e) {
-                debug.error(e.stack);
+                logger.error(e.stack, NS);
             }
         }
 
         if (buffalo.isMore()) {
             let bufferString = buffalo.getBuffer().toString('hex');
-            debug.error(
-                "Last bytes of data were not parsed \x1b[32m%s\x1b[31m%s\x1b[0m ",
-                bufferString.slice(0, (buffalo.getPosition() * 2)).replace(/../g, "$& "),
-                bufferString.slice(buffalo.getPosition() * 2).replace(/../g, "$& ")
-            )
+            logger.error(`Last bytes of data were not parsed \x1b[32m${bufferString.slice(0, (buffalo.getPosition() * 2)).replace(/../g, "$& ")}`
+                + `\x1b[31m${bufferString.slice(buffalo.getPosition() * 2).replace(/../g, "$& ")}\x1b[0m `, NS);
         }
 
         return result;

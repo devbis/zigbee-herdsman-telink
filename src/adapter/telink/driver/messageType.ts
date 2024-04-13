@@ -177,227 +177,34 @@ export const TelinkMessage: { [k: number]: TelinkMessageType } = {
         ],
     },
 
-    // [TelinkMessageCode.PermitJoinStatus]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status:uint8_t>
-    //     ]
-    // },
+    [TelinkMessageCode.ZBHCI_CMD_AF_DATA_SEND_RSP] : {
+        response: [
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+            {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
+            {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
+            {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
+            // {name: 'profileID', parameterType: ParameterType.UINT16BE}, // <profile ID: uint16_t>
+            // {name: 'securityMode', parameterType: ParameterType.UINT8}, // <security mode: uint8_t>
+            // {name: 'radius', parameterType: ParameterType.UINT8}, // <radius: uint8_t>
+            {name: 'dataLength', parameterType: ParameterType.UINT16BE}, // <data length: uint8_t>
+            {name: 'data', parameterType: ParameterType.BUFFER}, // <data: auint8_t>
+        ]
+    },
 
-    // [TelinkMessageCode.ZBHCI_CMD_DATA_CONFIRM]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         {name: 'profileID', parameterType: ParameterType.UINT16BE}, // <Profile ID: uint16_t>
-    //         {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
-    //         {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
-    //         {name: 'sourceAddressMode', parameterType: ParameterType.UINT8}, // <source address mode: uint8_t>
-    //         {name: 'sourceAddress', parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY},
-    //         // <source address: uint16_t or uint64_t>
-    //         {name: 'destinationAddressMode', parameterType: ParameterType.UINT8},
-    //         // <destination address mode: uint8_t>
-    //         {name: 'destinationAddress', parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY},
-    //         // <destination address: uint16_t or uint64_t>
-    //         // {name: 'payloadSize', parameterType: ParameterType.UINT8}, // <payload size : uint8_t>
-    //         {name: 'payload', parameterType: ParameterType.BUFFER_RAW}, // <payload : data each element is
-    //         // uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.NodeClusterList]: {
-    //     response: [
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, //<source endpoint: uint8_t t>
-    //         {name: 'profileID', parameterType: ParameterType.UINT16}, // <profile ID: uint16_t>
-    //         {name: 'clusterCount', parameterType: ParameterType.UINT8},
-    //         {name: 'clusterList', parameterType: ParameterType.LIST_UINT16}, // <cluster list: data each entry is uint16_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.NodeAttributeList]: {
-    //     response: [
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, //<source endpoint: uint8_t t>
-    //         {name: 'profileID', parameterType: ParameterType.UINT16}, // <profile ID: uint16_t>
-    //         {name: 'clusterID', parameterType: ParameterType.UINT16}, // <cluster ID: uint16_t>
-    //         {name: 'attributeCount', parameterType: ParameterType.UINT8},
-    //         {name: 'attributeList', parameterType: ParameterType.LIST_UINT16}, //  <attribute list: data each entry is uint16_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.NodeCommandIDList]: {
-    //     response: [
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, //<source endpoint: uint8_t t>
-    //         {name: 'profileID', parameterType: ParameterType.UINT16}, // <profile ID: uint16_t>
-    //         {name: 'clusterID', parameterType: ParameterType.UINT16}, // <cluster ID: uint16_t>
-    //         {name: 'commandIDCount', parameterType: ParameterType.UINT8},
-    //         {name: 'commandIDList', parameterType: ParameterType.LIST_UINT8}, // <command ID list:data each entry is uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.APSDataACK]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         // {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
-    //         // {name: 'destinationAddressMode', parameterType: ParameterType.UINT8},
-    //         // // <destination address mode: uint8_t>
-    //         {name: 'destinationAddress', parameterType: ParameterType.UINT16BE},
-    //         {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
-    //         {name: 'clusterID', parameterType: ParameterType.UINT16BE},
-    //         // // <destination address: uint16_t or uint64_t>
-    //         {name: 'seqNumber', parameterType: ParameterType.UINT8}, // <seq number: uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.APSDataConfirm]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
-    //         {name: 'destinationAddressMode', parameterType: ParameterType.UINT8},
+    [TelinkMessageCode.ZBHCI_CMD_BINDING_RSP]: {
+        response: [
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
+            {name: 'status', parameterType: ParameterType.UINT8},
+        ],
+    },
 
-    //         {name: 'destinationAddressMode', parameterType: ParameterType.UINT8},
-    //         // <destination address mode: uint8_t>
-    //         {name: 'destinationAddress', parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY},
-    //         // <destination address: uint16_t or uint64_t>
-    //         {name: 'seqNumber', parameterType: ParameterType.UINT8}, // <seq number: uint8_t>
-    //         // from 3.1e
-    //         {name: 'PDUM_u8GetNpduUse', parameterType: ParameterType.MAYBE_UINT8},
-    //         {name: 'u8GetApduUse', parameterType: ParameterType.MAYBE_UINT8},
-    //     ]
-    // },
-    // [TelinkMessageCode.APSDataConfirmFailed]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <src endpoint: uint8_t>
-    //         {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <dst endpoint: uint8_t>
-    //         {name: 'destinationAddressMode', parameterType: ParameterType.UINT8}, // <dst address mode: uint8_t>
-    //         {name: 'destinationAddress', parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY},
-    //         // <destination address: uint64_t>
-    //         {name: 'seqNumber', parameterType: ParameterType.UINT8}, // <seq number: uint8_t>
-    //         // from 3.1e
-    //         {name: 'PDUM_u8GetNpduUse', parameterType: ParameterType.MAYBE_UINT8},
-    //         {name: 'u8GetApduUse', parameterType: ParameterType.MAYBE_UINT8},
-    //     ]
-    // },
-    // [TelinkMessageCode.NetworkState]: {
-    //     response: [
-    //         {name: 'shortAddress', parameterType: ParameterType.UINT16BE}, // <Short Address: uint16_t>
-    //         {name: 'extendedAddress', parameterType: ParameterType.IEEEADDR}, // <Extended Address: uint64_t>
-    //         {name: 'PANID', parameterType: ParameterType.UINT16BE}, // <PAN ID: uint16_t>
-    //         {name: 'ExtPANID', parameterType: ParameterType.IEEEADDR}, // <Ext PAN ID: uint64_t>
-    //         {name: 'Channel', parameterType: ParameterType.UINT8}, // <Channel: uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.VersionList]: {
-    //     response: [
-    //         {name: 'major', parameterType: ParameterType.UINT8},
-    //         {name: 'minor', parameterType: ParameterType.UINT8},
-    //         {name: 'revision', parameterType: ParameterType.UINT16},
-    //     ]
-    // },
-    // [TelinkMessageCode.NetworkJoined]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         // Status:
-    //         // 0 = Joined existing network
-    //         // 1 = Formed new network
-    //         // 128 – 244 = Failed (ZigBee event codes)
-    //         {name: 'shortAddress', parameterType: ParameterType.UINT16BE}, // <short address: uint16_t>
-    //         // {name: 'extendedAddress', parameterType: ParameterType.IEEEADDR}, // <extended address:uint64_t>
-    //         // {name: 'channel', parameterType: ParameterType.UINT8}, // <channel: uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.LeaveIndication]: {
-    //     response: [
-    //         {name: 'extendedAddress', parameterType: ParameterType.IEEEADDR}, // <extended address: uint64_t>
-    //         {name: 'rejoin', parameterType: ParameterType.UINT8}, // <rejoin status: uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.ManagementLeaveResponse]: {
-    //     response: [
-    //         {name: 'sqn', parameterType: ParameterType.UINT8},
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.RouterDiscoveryConfirm]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         // {name: 'nwkStatus', parameterType: ParameterType.UINT8}, // <nwk status: uint8_t>
-    //         // {name: 'dstAddress', parameterType: ParameterType.UINT16BE}, // <nwk status: uint16_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.SimpleDescriptorResponse]: {
-    //     response: [
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, //<source endpoint: uint8_t>
-    //         {name: 'profile ID', parameterType: ParameterType.UINT16BE}, // <profile ID: uint16_t>
-    //         {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
-    //         {name: 'attributeList', parameterType: ParameterType.LIST_UINT16BE}, // <attribute list: data each entry is uint16_t>
-    //     ]
-    // },
-    // [TelinkMessageCode.ManagementLQIResponse]: {
-    //     response: [
-    //         {name: 'sequence', parameterType: ParameterType.UINT8}, // <Sequence number: uint8_t>
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         {name: 'neighbourTableEntries', parameterType: ParameterType.UINT8}, // <Neighbour Table Entries : uint8_t>
-    //         {name: 'neighbourTableListCount', parameterType: ParameterType.UINT8}, // <Neighbour Table List Count : uint8_t>
-    //         {name: 'startIndex', parameterType: ParameterType.UINT8}, // <Start Index : uint8_t>
-    //         // @TODO list TYPE
-    //         // <List of Entries elements described below :>
-    //         // Note: If Neighbour Table list count is 0, there are no elements in the list.
-    //         {name: 'NWKAddress', parameterType: ParameterType.UINT16BE}, // NWK Address : uint16_t
-    //         {name: 'Extended PAN ID', parameterType: ParameterType.UINT64}, // Extended PAN ID : uint64_t
-    //         {name: 'IEEE Address', parameterType: ParameterType.IEEEADR}, // IEEE Address : uint64_t
-    //         {name: 'Depth', parameterType: ParameterType.UINT8}, // Depth : uint_t
-    //         {name: 'linkQuality', parameterType: ParameterType.UINT8}, // Link Quality : uint8_t
-    //         {name: 'bitMap', parameterType: ParameterType.UINT8}, // Bit map of attributes Described below: uint8_t
-    //         // bit 0-1 Device Type
-    //         // (0-Coordinator 1-Router 2-End Device)
-    //         // bit 2-3 Permit Join status
-    //         // (1- On 0-Off)
-    //         // bit 4-5 Relationship
-    //         // (0-Parent 1-Child 2-Sibling)
-    //         // bit 6-7 Rx On When Idle status
-    //         // (1-On 0-Off)
-    //         {name: 'srcAddress', parameterType: ParameterType.UINT16BE}, // <Src Address : uint16_t> ( only from v3.1a)
-    //     ]
-    // },
-    // [TelinkMessageCode.PDMEvent]: {
-    //     response: [
-    //         {name: 'eventStatus', parameterType: ParameterType.UINT8}, // <event status: uint8_t>
-    //         {name: 'recordID', parameterType: ParameterType.UINT32BE}, // <record ID: uint32_t>
+    [TelinkMessageCode.ZBHCI_CMD_UNBINDING_RSP]: {
+        response: [
+            {name: 'sourceAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'seqNum', parameterType: ParameterType.UINT8},
+            {name: 'status', parameterType: ParameterType.UINT8},
+        ],
+    },
 
-    //     ]
-    // },
-    // [TelinkMessageCode.PDMLoaded]: {
-    //     response: [
-    //         {name: 'length', parameterType: ParameterType.UINT8},
-    //     ]
-    // },
-    // [TelinkMessageCode.RestartNonFactoryNew]: { // Non “Factory new” Restart
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         //	0 – STARTUP
-    //         // 1 – RUNNING
-    //         // 2 – NFN_START
-    //     ]
-    // },
-    // [TelinkMessageCode.RestartFactoryNew]: { // “Factory New” Restart
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8}, // <status: uint8_t>
-    //         // 0 – STARTUP
-    //         // 2 – NFN_START
-    //         // 6 – RUNNING
-    //         // The node is not yet provisioned.
-    //     ]
-    // },
-    // [TelinkMessageCode.ExtendedStatusCallBack]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT8},
-    //         // https://github.com/fairecasoimeme/Telink/blob/aac14153db332eb5b898cba0f57f5999e5cf11eb/Module%20Radio/Firmware/src/sdk/JN-SW-4170/Components/ZPSNWK/Include/zps_nwk_pub.h#L89
-    //     ]
-    // },
-    // [0x8001]: {
-    //     response: [
-    //         {name: 'logLevel', parameterType: ParameterType.LOG_LEVEL},
-    //         {name: 'log', parameterType: ParameterType.STRING},
-    //     ]
-    // },
-    // [TelinkMessageCode.AddGroupResponse]: {
-    //     response: [
-    //         {name: 'status', parameterType: ParameterType.UINT16BE},
-    //         {name: 'groupAddress', parameterType: ParameterType.UINT16BE},
-    //     ]
-    // }
 };

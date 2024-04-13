@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 /* eslint-disable */
+import { request } from "http";
 import {TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./constants";
 import ParameterType from "./parameterType";
 
@@ -73,7 +74,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     },
     [TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET]: {  // 0x0008
         request: [
-            {name: 'mode', parameterType: 'UINT8'}, //<mode: uint8_t>
+            {name: 'mode', parameterType: ParameterType.UINT8}, //<mode: uint8_t>
         ],
         response: [
             [
@@ -147,7 +148,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
 
     [TelinkCommandCode.ZBHCI_CMD_RAW_MODE]: {  // 0x0099
         request: [
-            {name: 'raw', parameterType: 'UINT8'}, //<mode: uint8_t>
+            {name: 'raw', parameterType: ParameterType.UINT8}, //<mode: uint8_t>
         ],
         response: [
             [
@@ -179,9 +180,9 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     },
     [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_SIMPLE_DESC_REQ]: {
         request: [
-            {name: 'destShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
-            {name: 'targetShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
-            {name: 'endpoint', parameterType: 'UINT8'},
+            {name: 'destShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+            {name: 'endpoint', parameterType: ParameterType.UINT8},
         ],
         response: [
             [
@@ -200,8 +201,8 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     },
     [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_ACTIVE_EP_REQ]: {
         request: [
-            {name: 'destShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
-            {name: 'targetShortAddress', parameterType: 'UINT16BE'}, // <target short address: uint16_t>
+            {name: 'destShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
         ],
         response: [
             [
@@ -217,6 +218,39 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
                 },
             ],
         ]
+    },
+    [TelinkCommandCode.ZBHCI_CMD_BINDING_REQ]: {
+        request: [
+            {name: 'targetExtendedAddress', parameterType: ParameterType.IEEEADDR}, // <target extended address: uint64_t>
+            {name: 'targetEndpoint', parameterType: ParameterType.UINT8}, // <target endpoint: uint8_t>
+            {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
+            {name: 'destinationAddressMode', parameterType: ParameterType.UINT8}, // <destination address mode: uint8_t>
+            {
+                name: 'destinationAddress',
+                parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY
+            }, // <destination address:uint16_t or uint64_t>
+            {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint (
+            // value ignored for group address): uint8_t>
+        ],
+        response: [
+            [
+                {
+                    receivedProperty: 'code',
+                    matcher: equal,
+                    value: TelinkMessageCode.ZBHCI_CMD_BINDING_RSP,
+                },
+                {
+                    receivedProperty: 'payload.sourceAddress',
+                    matcher: equal,
+                    expectedExtraParameter: 'destinationAddress'
+                },
+    //             {
+    //                 receivedProperty: 'payload.clusterID',
+    //                 matcher: equal,
+    //                 value: 0x8021
+    //             },
+            ]
+        ],
     },
     // [TelinkCommandCode.SetDeviceType]: {  // 0x0023
     //     request: [
@@ -423,20 +457,34 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     //         ],
     //     ]
     // },
-    // [TelinkCommandCode.RawAPSDataRequest]: {
-    //     request: [
-    //         {name: 'addressMode', parameterType: ParameterType.UINT8}, // <address mode: uint8_t>
-    //         {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
-    //         {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
-    //         {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
-    //         {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
-    //         {name: 'profileID', parameterType: ParameterType.UINT16BE}, // <profile ID: uint16_t>
-    //         {name: 'securityMode', parameterType: ParameterType.UINT8}, // <security mode: uint8_t>
-    //         {name: 'radius', parameterType: ParameterType.UINT8}, // <radius: uint8_t>
-    //         {name: 'dataLength', parameterType: ParameterType.UINT8}, // <data length: uint8_t>
-    //         {name: 'data', parameterType: ParameterType.BUFFER}, // <data: auint8_t>
-    //     ],
-    // },
+    [TelinkCommandCode.ZBHCI_CMD_AF_DATA_SEND_REQ]: {
+        request: [
+            // {name: 'addressMode', parameterType: ParameterType.UINT8}, // <address mode: uint8_t>
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+            {name: 'sourceEndpoint', parameterType: ParameterType.UINT8}, // <source endpoint: uint8_t>
+            {name: 'destinationEndpoint', parameterType: ParameterType.UINT8}, // <destination endpoint: uint8_t>
+            {name: 'clusterID', parameterType: ParameterType.UINT16BE}, // <cluster ID: uint16_t>
+            // {name: 'profileID', parameterType: ParameterType.UINT16BE}, // <profile ID: uint16_t>
+            // {name: 'securityMode', parameterType: ParameterType.UINT8}, // <security mode: uint8_t>
+            // {name: 'radius', parameterType: ParameterType.UINT8}, // <radius: uint8_t>
+            {name: 'dataLength', parameterType: ParameterType.UINT16BE}, // <data length: uint8_t>
+            {name: 'data', parameterType: ParameterType.BUFFER}, // <data: auint8_t>
+        ],
+        response: [
+            [
+                {
+                    receivedProperty: 'code',
+                    matcher: equal,
+                    value: TelinkMessageCode.ZBHCI_CMD_AF_DATA_SEND_RSP
+                },
+                {
+                    receivedProperty: 'payload.sourceAddress',
+                    matcher: equal,
+                    expectedProperty: 'payload.targetShortAddress'
+                },
+            ]
+        ]
+    },
 
     // [TelinkCommandCode.ActiveEndpoint]: {
     //     request: [
