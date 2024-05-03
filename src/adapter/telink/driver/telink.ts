@@ -10,19 +10,21 @@ import SocketPortUtils from "../../socketPortUtils";
 import net from "net";
 import {Queue, Wait} from "../../../utils";
 import {SerialPortOptions} from "../../tstype";
-import {STATUS, TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./constants";
+import {TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./constants";
 import TelinkObject from "./telinkObject";
-import {ZclFrame} from "../../../zcl";
+import {DataType, Direction, FrameType, ZclFrame} from "../../../zcl";
 import Waitress from "../../../utils/waitress";
 import {equal, TelinkResponseMatcher, TelinkResponseMatcherRule} from "./commandType";
 import TelinkFrame from "./frame";
-import {Buffalo} from "../../../buffalo";
+import { ZclPayload } from 'src/adapter/events';
+import BuffaloZcl from '../../../zcl/buffaloZcl';
 
 const debug = Debug('driver');
 
 const autoDetectDefinitions = [
-    {manufacturer: 'zigate_PL2303', vendorId: '067b', productId: '2303'},
-    // {manufacturer: 'zigate_cp2102', vendorId: '10c4', productId: 'ea60'},
+    // FIXME
+    {manufacturer: 'xxx_PL2303', vendorId: '067b', productId: '2303'},
+    {manufacturer: 'xxx_cp2102', vendorId: '10c4', productId: 'ea60'},
 ];
 
 const timeouts = {
@@ -118,8 +120,8 @@ export default class Telink extends EventEmitter {
                 let resultPromise: Promise<TelinkObject>;
                 if (telinkObject.command.waitStatus !== false) {
                     const ruleStatus: TelinkResponseMatcher = [
-                        {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_DATA_CONFIRM},
-                        {receivedProperty: 'payload.packetType', matcher: equal, value: telinkObject.code},
+                        {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_ACKNOWLEDGE},
+                        // {receivedProperty: 'payload.packetType', matcher: equal, value: telinkObject.code},
                     ];
 
                     const statusWaiter = this.waitress.waitFor(
@@ -134,10 +136,11 @@ export default class Telink extends EventEmitter {
 
                 if (telinkObject.command.waitStatus !== false) {
                     let statusResponse: TelinkObject = await resultPromise;
-                    if (statusResponse.payload.status !== STATUS.E_SL_MSG_STATUS_SUCCESS) {
-                        waitersId.map((id) => this.waitress.remove(id));
-                        return Promise.reject(statusResponse);
-                    } else if (waiters.length === 0) {
+                    // if (statusResponse.payload.status !== STATUS.E_SL_MSG_STATUS_SUCCESS) {
+                    //     waitersId.map((id) => this.waitress.remove(id));
+                    //     return Promise.reject(statusResponse);
+                    // } else
+                    if (waiters.length === 0) {
                         return Promise.resolve(statusResponse);
                     }
                 }
@@ -313,31 +316,92 @@ export default class Telink extends EventEmitter {
                 this.waitress.resolve(telinkObject);
 
                 switch (code) {
-                    case TelinkMessageCode.ZBHCI_CMD_DATA_CONFIRM:
-                        switch (telinkObject.payload.profileID) {
-                            case 0x0000:
-                                switch (telinkObject.payload.clusterID) {
-                                    case 0x0013:
-                                        let networkAddress = telinkObject.payload.payload.readUInt16LE(1);
-                                        let ieeeAddr = new Buffalo(telinkObject.payload.payload.slice(3, 11)).readIeeeAddr();
-                                        this.emit('DeviceAnnounce', networkAddress, ieeeAddr);
-                                        break;
-                                }
-                                break;
-                            case 0x0104:
-                                this.emit('received', {telinkObject});
-                                break;
-                            default:
-
-                                debug.error("not implemented profile: " + telinkObject.payload.profileID);
+                    case TelinkMessageCode.ZBHCI_CMD_NODES_DEV_ANNCE_IND:
+                        {
+                            let networkAddress = telinkObject.payload.shortAddress;
+                            let ieeeAddr = telinkObject.payload.ieee;
+                            this.emit('DeviceAnnounce', networkAddress, ieeeAddr);
                         }
                         break;
                     case TelinkMessageCode.ZBHCI_CMD_NODE_LEAVE_IND:
                         this.emit('LeaveIndication', {telinkObject});
                         break;
-                    case TelinkMessageCode.ZBHCI_CMD_MAC_ADDR_IND:
-                        this.emit('DeviceAnnounce', telinkObject.payload.shortAddress, telinkObject.payload.ieee);
+                    case TelinkMessageCode.ZBHCI_CMD_ZCL_REPORT_MSG_RCV:
+                        // TODO: create ZclFrame
+                        const payload: ZclPayload = {
+                            // frame: ZclFrame.fromBuffer(telinkObject.payload.clusterID, telinkObject.payload.attrData),
+                            data: null,
+                            address: telinkObject.payload.sourceAddress, //(resp.destAddrMode === 0x03) ? resp.srcAddr64 : resp.srcAddr16,
+                            endpoint: telinkObject.payload.sourceEndpoint,
+                            linkquality: 0, // TODO
+                            groupID: null, //(resp.destAddrMode === 0x01) ? resp.destAddr16 : null,
+                            wasBroadcast: false, // resp.destAddrMode === 0x01 || resp.destAddrMode === 0xF,
+                            destinationEndpoint: telinkObject.payload.destinationEndpoint,
+                        };
+                        const payloadList = [];
+                        const buffalo = new BuffaloZcl(telinkObject.payload.attrData.slice(3));
+                        let buf = telinkObject.payload.attrData;
+                        let counter = telinkObject.payload.numAttr;
+                        while (counter > 0) {
+                            const attrId = buf.readUInt16BE(0);
+                            const dataType = buf.readUInt8(2);
+                            const buffalo = new BuffaloZcl(telinkObject.payload.attrData.slice(3));
+                            let nameDataType = DataType.UNKNOWN;
+                            for (const [k, v] of Object.entries(DataType)) {
+                                if (v == dataType) {
+                                    nameDataType = DataType[k];
+                                }
+                            }
+                            const attrData = buffalo.read(nameDataType, {attrId, dataType: nameDataType});
+                            payloadList.push({
+                                attrId,
+                                dataType,
+                                attrData,
+                            });
+                            counter -= 1;
+                        }
+                        const zclFrame = ZclFrame.create(
+                            FrameType.GLOBAL,
+                            Direction.CLIENT_TO_SERVER, true,
+                            null, telinkObject.payload.seqNum,
+                            // (frame.messageType == 0xE0) ? 'commisioningNotification' : 'notification',
+                            'report',
+                            telinkObject.payload.clusterID,
+                            payloadList, //telinkObject.payload.attrData,
+                            {},
+                        );
+                        // payload.frame = zclFrame;
+
+                        this.emit('received', {telinkObject, zclFrame});
                         break;
+                    // case TelinkMessageCode.ZBHCI_CMD_DATA_CONFIRM:
+                    //     switch (telinkObject.payload.profileID) {
+                    //         case 0x0000:
+                    //             switch (telinkObject.payload.clusterID) {
+                    //                 case 0x0013:
+                    //                     let networkAddress = telinkObject.payload.payload.readUInt16LE(1);
+                    //                     let ieeeAddr = new Buffalo(telinkObject.payload.payload.slice(3, 11)).readIeeeAddr();
+                    //                     this.emit('DeviceAnnounce', networkAddress, ieeeAddr);
+                    //                     break;
+                    //             }
+                    //             break;
+                    //         case 0x0104:
+                    //             try {
+                    //                 const zclFrame = ZclFrame.fromBuffer(
+                    //                     <number>telinkObject.payload.clusterID,
+                    //                     <Buffer>telinkObject.payload.payload
+                    //                 );
+                    //                 this.emit('received', {telinkObject, zclFrame});
+                    //             } catch (error) {
+                    //                 debug.error("could not parse zclFrame: " + error);
+                    //                 this.emit('receivedRaw', {telinkObject});
+                    //             }
+                    //             break;
+                    //         default:
+
+                    //             debug.error("not implemented profile: " + telinkObject.payload.profileID);
+                    //     }
+                    //     break;
                 }
 
             } catch (error) {
@@ -365,6 +429,7 @@ export default class Telink extends EventEmitter {
                     expectedValue = rule.value;
                 }
                 const receivedValue = resolve(rule.receivedProperty, telinkObject);
+                debug.log(`waitressValidator: ${rule.receivedProperty}=${receivedValue}, ${expectedValue} %o: ${rule.matcher(expectedValue, receivedValue)}`, telinkObject);
                 return rule.matcher(expectedValue, receivedValue);
             } catch (e) {
                 return false;

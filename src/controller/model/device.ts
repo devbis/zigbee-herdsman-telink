@@ -315,7 +315,7 @@ class Device extends Entity {
         const disableTuyaDefaultResponse = endpoint.getDevice().manufacturerName?.startsWith('_TZ') && process.env['DISABLE_TUYA_DEFAULT_RESPONSE'];
         // Sometimes messages are received twice, prevent responding twice
         const alreadyResponded = this._lastDefaultResponseSequenceNumber === frame.header.transactionSequenceNumber;
-        if (this.type !== 'GreenPower' && !dataPayload.wasBroadcast && !disableDefaultResponse && !isDefaultResponse && 
+        if (this.type !== 'GreenPower' && !dataPayload.wasBroadcast && !disableDefaultResponse && !isDefaultResponse &&
             !commandHasResponse && !this._skipDefaultResponse && !alreadyResponded && !disableTuyaDefaultResponse) {
             try {
                 this._lastDefaultResponseSequenceNumber = frame.header.transactionSequenceNumber;
@@ -323,9 +323,9 @@ class Device extends Entity {
                 // In https://github.com/Koenkk/zigbee2mqtt/issues/18096 a commandResponse (SERVER_TO_CLIENT)
                 // is send and the device expects a CLIENT_TO_SERVER back.
                 // Previously SERVER_TO_CLIENT was always used.
-                // Therefore for non-global commands we inverse the direction.                
+                // Therefore for non-global commands we inverse the direction.
                 const direction = frame.header.isGlobal ? Zcl.Direction.SERVER_TO_CLIENT : (
-                    frame.header.frameControl.direction === Zcl.Direction.CLIENT_TO_SERVER 
+                    frame.header.frameControl.direction === Zcl.Direction.CLIENT_TO_SERVER
                         ? Zcl.Direction.SERVER_TO_CLIENT : Zcl.Direction.CLIENT_TO_SERVER
                 );
                 await endpoint.defaultResponse(
@@ -610,7 +610,7 @@ class Device extends Entity {
             logger.debug("Interview - Detected potential TuYa end device, reading modelID and manufacturerName...", NS);
             try {
                 const endpoint = Endpoint.create(1, undefined, undefined, [], [], this.networkAddress, this.ieeeAddr);
-                const result = await endpoint.read('genBasic', ['modelId', 'manufacturerName'], 
+                const result = await endpoint.read('genBasic', ['modelId', 'manufacturerName'],
                     {sendPolicy: 'immediate'});
                 Object.entries(result)
                     .forEach((entry) => Device.ReportablePropertiesMapping[entry[0]].set(entry[1], this));
@@ -789,7 +789,7 @@ class Device extends Entity {
         this.meta = {};
         const newEndpoints: Endpoint[] = [];
         for (const endpoint of this.endpoints) {
-            newEndpoints.push(Endpoint.create(endpoint.ID, endpoint.profileID, endpoint.deviceID, 
+            newEndpoints.push(Endpoint.create(endpoint.ID, endpoint.profileID, endpoint.deviceID,
                 endpoint.inputClusters, endpoint.outputClusters, this.networkAddress, this.ieeeAddr));
         }
         this._endpoints = newEndpoints;

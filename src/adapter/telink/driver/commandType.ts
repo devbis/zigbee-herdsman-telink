@@ -62,6 +62,92 @@ export type TelinkResponseMatcher = TelinkResponseMatcherRule[];
 
 
 export const TelinkCommand: { [key: string]: TelinkCommandType } = {
+    [TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION]: {  // 0x0001
+        request: [],
+        response: [
+            [
+                {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION},
+            ],
+        ],
+    },
+    [TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ]: {  // 0x0030
+        request: [],
+        response: [
+            [
+                {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ},
+            ],
+        ],
+    },
+    [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NWK_ADDR_REQ]: {  // 0x0010
+        request: [],
+        response: [
+            [
+                {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NWK_ADDR_REQ},
+            ],
+        ],
+    },
+    [TelinkCommandCode.ZBHCI_CMD_MGMT_PERMIT_JOIN_REQ]: {  // 0x0034
+        request: [
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, //<target short address: uint16_t> -
+            // broadcast 0xfffc
+            {name: 'interval', parameterType: ParameterType.UINT8}, //<interval: uint8_t>
+            // 0 = Disable Joining
+            // 1 – 254 = Time in seconds to allow joins
+            // 255 = Allow all joins
+            {name: 'TCsignificance', parameterType: ParameterType.UINT8}, //<TCsignificance: uint8_t>
+            // 0 = No change in authentication
+            // 1 = Authentication policy as spec
+        ],
+        response: [
+            [
+                {receivedProperty: 'payload.messageCode', matcher: equal, value: TelinkCommandCode.ZBHCI_CMD_MGMT_PERMIT_JOIN_REQ},
+            ],
+        ],
+    },
+    [TelinkCommandCode.ZBHCI_CMD_MGMT_LEAVE_REQ] : {
+        request: [
+            {name: 'shortAddress', parameterType: ParameterType.UINT16BE},
+            {name: 'extendedAddress', parameterType: ParameterType.IEEEADDR},
+            {name: 'rejoin', parameterType: ParameterType.UINT8},
+            {name: 'childrenLeave', parameterType: ParameterType.UINT8},
+        ],
+        response: [
+            [
+                {receivedProperty: 'code', matcher: equal, value: TelinkMessageCode.ZBHCI_CMD_MGMT_LEAVE_RSP},
+                {
+                    receivedProperty: 'payload.sourceAddress',
+                    matcher: equal,
+                    expectedProperty: 'payload.shortAddress'
+                },
+            ],
+        ],
+    },
+
+    [TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NODE_DESC_REQ]: {
+        request: [
+            {name: 'destShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+            {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
+        ],
+        response: [
+            [
+                {
+                    receivedProperty: 'code',
+                    matcher: equal,
+                    value: TelinkMessageCode.ZBHCI_CMD_DISCOVERY_NODE_DESC_RSP
+                },
+                {
+                    receivedProperty: 'payload.sourceAddress',
+                    matcher: equal,
+                    expectedProperty: 'payload.targetShortAddress'
+                },
+                // {
+                //     receivedProperty: 'payload.clusterID',
+                //     matcher: equal,
+                //     value: 0x8002
+                // },
+            ],
+        ]
+    },
     // [TelinkCommandCode.SetDeviceType]: {  // 0x0023
     //     request: [
     //         {name: 'deviceType', parameterType: ParameterType.UINT8} //<device type: uint8_t>
@@ -281,30 +367,7 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     //         {name: 'data', parameterType: ParameterType.BUFFER}, // <data: auint8_t>
     //     ],
     // },
-    // [TelinkCommandCode.NodeDescriptor]: {
-    //     request: [
-    //         {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
-    //     ],
-    //     response: [
-    //         [
-    //             {
-    //                 receivedProperty: 'code',
-    //                 matcher: equal,
-    //                 value: TelinkMessageCode.DataIndication
-    //             },
-    //             {
-    //                 receivedProperty: 'payload.sourceAddress',
-    //                 matcher: equal,
-    //                 expectedProperty: 'payload.targetShortAddress'
-    //             },
-    //             {
-    //                 receivedProperty: 'payload.clusterID',
-    //                 matcher: equal,
-    //                 value: 0x8002
-    //             }
-    //         ],
-    //     ]
-    // },
+
     // [TelinkCommandCode.ActiveEndpoint]: {
     //     request: [
     //         {name: 'targetShortAddress', parameterType: ParameterType.UINT16BE}, // <target short address: uint16_t>
@@ -426,13 +489,14 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     //         ],
     //     ]
     // },
-    // [TelinkCommandCode.AddGroup]: {
-    //     request: [
-    //         { name: 'addressMode', parameterType: ParameterType.UINT8 }, //<device type: uint8_t>
-    //         { name: 'shortAddress', parameterType: ParameterType.UINT16BE },
-    //         { name: 'sourceEndpoint', parameterType: ParameterType.UINT8 },
-    //         { name: 'destinationEndpoint', parameterType: ParameterType.UINT8 },
-    //         { name: 'groupAddress', parameterType: ParameterType.UINT16BE },
-    //     ]
-    // }
+    [TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD]: {
+        request: [
+            { name: 'groupAddress', parameterType: ParameterType.UINT16BE },
+            { name: 'groupName', parameterType: ParameterType.BUFFER },
+            // { name: 'addressMode', parameterType: ParameterType.UINT8 }, //<device type: uint8_t>
+            // { name: 'shortAddress', parameterType: ParameterType.UINT16BE },
+            // { name: 'sourceEndpoint', parameterType: ParameterType.UINT8 },
+            // { name: 'destinationEndpoint', parameterType: ParameterType.UINT8 },
+        ]
+    }
 };

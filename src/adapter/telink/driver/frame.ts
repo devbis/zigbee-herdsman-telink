@@ -4,7 +4,7 @@ import {Debug} from '../debug';
 
 const debug = Debug('driver:frame');
 
-enum ZiGateFrameChunkSize {
+enum TelinkFrameChunkSize {
     UInt8 = 1,
     UInt16,
     UInt32,
@@ -35,9 +35,9 @@ const removeDuplicate = (_: unknown, idx: number, frame: number[][]): boolean =>
     return first !== 0x2;
 };
 
-const decodeBytes = (bytesPair: [number, number]): number => {
-    return bytesPair[0] === 0x2 ? bytesPair[1] ^ 0x10 : bytesPair[0];
-};
+// const decodeBytes = (bytesPair: [number, number]): number => {
+//     return bytesPair[0] === 0x2 ? bytesPair[1] ^ 0x10 : bytesPair[0];
+// };
 
 const readBytes = (bytes: Buffer): number => {
     return bytes.readUIntBE(0, bytes.length);
@@ -52,38 +52,37 @@ const xor = (checksum: number, byte: number): number => {
 };
 
 const decodeFrame = (frame: Buffer): Buffer => {
-    const arrFrame = Array.from(frame)
-        .map(combineBytes)
-        .filter(removeDuplicate)
-        .map(decodeBytes);
+    // const arrFrame = Array.from(frame)
+    //     .map(combineBytes)
+    //     .filter(removeDuplicate)
+    //     .map(decodeBytes);
 
-    return Buffer.from(arrFrame);
+    // return Buffer.from(arrFrame);
+    return frame;
 };
 
-const getFrameChunk = (frame: Buffer, pos: number, size: ZiGateFrameChunkSize): Buffer => {
+const getFrameChunk = (frame: Buffer, pos: number, size: TelinkFrameChunkSize): Buffer => {
     return frame.slice(pos, pos + size);
 };
 
-export default class ZiGateFrame {
-    static readonly START_BYTE = 0x1;
-    static readonly STOP_BYTE = 0x3;
+export default class TelinkFrame {
+    static readonly START_BYTE = 0x55;
+    static readonly STOP_BYTE = 0xAA;
 
-    msgCodeBytes: Buffer = Buffer.alloc(ZiGateFrameChunkSize.UInt16);
-    msgLengthBytes: Buffer = Buffer.alloc(ZiGateFrameChunkSize.UInt16);
-    checksumBytes: Buffer = Buffer.alloc(ZiGateFrameChunkSize.UInt8);
+    msgCodeBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt16);
+    msgLengthBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt16);
+    checksumBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt8);
     msgPayloadBytes: Buffer = Buffer.alloc(0);
-    rssiBytes: Buffer = Buffer.alloc(0);
+    rssiBytes: Buffer = Buffer.alloc(TelinkFrameChunkSize.UInt8); // TODO: remove
 
     msgLengthOffset = 0;
 
     constructor(frame?: Buffer) {
         if (frame !== undefined) {
             const decodedFrame = decodeFrame(frame);
-            // debug.log(`decoded frame >>> %o`, decodedFrame);
-            // Due to ZiGate incoming frames with erroneous msg length
-            this.msgLengthOffset = -1;
+            debug.log(`decodedFrame %o`, decodedFrame);
 
-            if (!ZiGateFrame.isValid(frame)) {
+            if (!TelinkFrame.isValid(frame)) {
                 debug.error('Provided frame is not a valid ZiGate frame.');
                 return;
             }
@@ -91,7 +90,7 @@ export default class ZiGateFrame {
             this.buildChunks(decodedFrame);
 
             try {
-                if(this.readMsgCode() !== 0x8001)
+                if(this.readMsgCode() !== 0x8200)
                     debug.log(`%o`, this);
             } catch (e) {
                 debug.error(e)
@@ -105,7 +104,7 @@ export default class ZiGateFrame {
     }
 
     static isValid(frame: Buffer): boolean {
-        return hasStartByte(ZiGateFrame.START_BYTE, frame) && hasStopByte(ZiGateFrame.STOP_BYTE, frame);
+        return hasStartByte(TelinkFrame.START_BYTE, frame) && hasStopByte(TelinkFrame.STOP_BYTE, frame);
     }
 
     buildChunks(frame: Buffer): void {
@@ -113,13 +112,13 @@ export default class ZiGateFrame {
         this.msgLengthBytes = getFrameChunk(frame, 3, this.msgLengthBytes.length);
         this.checksumBytes = getFrameChunk(frame, 5, this.checksumBytes.length);
         this.msgPayloadBytes = getFrameChunk(frame, 6, this.readMsgLength());
-        this.rssiBytes = getFrameChunk(frame, 6 + this.readMsgLength(), ZiGateFrameChunkSize.UInt8);
+        // this.rssiBytes = getFrameChunk(frame, 6 + this.readMsgLength(), TelinkFrameChunkSize.UInt8);
     }
 
     toBuffer(): Buffer {
         const length = 5 + this.readMsgLength();
 
-        const escapedData = this.escapeData(Buffer.concat(
+        const escapedData = Buffer.concat(
             [
                 this.msgCodeBytes,
                 this.msgLengthBytes,
@@ -127,38 +126,39 @@ export default class ZiGateFrame {
                 this.msgPayloadBytes,
             ],
             length,
-        ));
+        );
 
         return Buffer.concat(
             [
-                Uint8Array.from([ZiGateFrame.START_BYTE]),
+                Uint8Array.from([TelinkFrame.START_BYTE]),
                 escapedData,
-                Uint8Array.from([ZiGateFrame.STOP_BYTE]),
+                Uint8Array.from([TelinkFrame.STOP_BYTE]),
             ]
         );
     }
 
     escapeData(data: Buffer): Buffer {
-        let encodedLength = 0;
-        const encodedData = Buffer.alloc(data.length * 2);
-        const FRAME_ESCAPE_XOR = 0x10;
-        const FRAME_ESCAPE = 0x02;
-        for (const b of data) {
-            if (b <= FRAME_ESCAPE_XOR) {
-                encodedData[encodedLength++] = FRAME_ESCAPE;
-                encodedData[encodedLength++] = b ^ FRAME_ESCAPE_XOR;
-            } else {
-                encodedData[encodedLength++] = b;
-            }
-        }
-        return encodedData.slice(0, encodedLength);
+        return data;
+        // let encodedLength = 0;
+        // const encodedData = Buffer.alloc(data.length * 2);
+        // const FRAME_ESCAPE_XOR = 0x10;
+        // const FRAME_ESCAPE = 0x02;
+        // for (const b of data) {
+        //     if (b <= FRAME_ESCAPE_XOR) {
+        //         encodedData[encodedLength++] = FRAME_ESCAPE;
+        //         encodedData[encodedLength++] = b ^ FRAME_ESCAPE_XOR;
+        //     } else {
+        //         encodedData[encodedLength++] = b;
+        //     }
+        // }
+        // return encodedData.slice(0, encodedLength);
     }
 
     readMsgCode(): number {
         return readBytes(this.msgCodeBytes);
     }
 
-    writeMsgCode(msgCode: number): ZiGateFrame {
+    writeMsgCode(msgCode: number): TelinkFrame {
         writeBytes(this.msgCodeBytes, msgCode);
         this.writeChecksum();
         return this;
@@ -168,7 +168,7 @@ export default class ZiGateFrame {
         return readBytes(this.msgLengthBytes) + this.msgLengthOffset;
     }
 
-    writeMsgLength(msgLength: number): ZiGateFrame {
+    writeMsgLength(msgLength: number): TelinkFrame {
         writeBytes(this.msgLengthBytes, msgLength);
         return this;
     }
@@ -177,7 +177,7 @@ export default class ZiGateFrame {
         return readBytes(this.checksumBytes);
     }
 
-    writeMsgPayload(msgPayload: Buffer): ZiGateFrame {
+    writeMsgPayload(msgPayload: Buffer): TelinkFrame {
         this.msgPayloadBytes = Buffer.from(msgPayload);
         this.writeMsgLength(msgPayload.length);
         this.writeChecksum();
@@ -188,7 +188,7 @@ export default class ZiGateFrame {
         return readBytes(this.rssiBytes);
     }
 
-    writeRSSI(rssi: number): ZiGateFrame {
+    writeRSSI(rssi: number): TelinkFrame {
         this.rssiBytes = Buffer.from([rssi]);
         this.writeChecksum();
         return this;

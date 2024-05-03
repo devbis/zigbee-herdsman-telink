@@ -71,12 +71,15 @@ class TelinkAdapter extends Adapter {
             await this.driver.open();
             logger.info("Connected to Telink adapter successfully.", NS);
 
-            const resetResponse = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ, {}, 5000)
+            // const resetResponse = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ, {}, 5000)
+
             // if (resetResponse.code === TelinkMessageCode.RestartNonFactoryNew) {
                 startResult = 'resumed';
             // } else if (resetResponse.code === TelinkMessageCode.RestartFactoryNew) {
                 // startResult = 'reset';
             // }
+            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION);
+
             // await this.driver.sendCommand(TelinkCommandCode.RawMode, {enabled: 0x01});
             // @todo check
             // await this.driver.sendCommand(TelinkCommandCode.SetDeviceType, {
@@ -84,15 +87,15 @@ class TelinkAdapter extends Adapter {
             // });
             await this.initNetwork();
 
-            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD, {
-                addressMode: ADDRESS_MODE.short ,
-                shortAddress: 0x0000,
-                sourceEndpoint:0x01,
-                destinationEndpoint:0x01,
-                groupAddress: default_bind_group
-            });
+            // await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD, {
+            //     addressMode: ADDRESS_MODE.short ,
+            //     shortAddress: 0x0000,
+            //     sourceEndpoint:0x01,
+            //     destinationEndpoint:0x01,
+            //     groupAddress: default_bind_group
+            // });
         } catch (error) {
-            throw new Error("failed to connect to zigate adapter " + error.message);
+            throw new Error("failed to connect to telink adapter " + error.message);
         }
 
         const concurrent = this.adapterOptions && this.adapterOptions.concurrent ?
@@ -126,7 +129,18 @@ class TelinkAdapter extends Adapter {
 
     public async getCoordinatorVersion(): Promise<TsType.CoordinatorVersion> {
         logger.debug('getCoordinatorVersion', NS);
-        return new Promise(()=>{});
+        const version: TsType.CoordinatorVersion = {
+            type: 'Telink',
+            meta: {
+                "transportrev": 0,
+                "product": 0,
+                "majorrel": 1,
+                "minorrel": 0,
+                "maintrel": 0,
+                "revision": '1.0.0',
+            },
+        };
+        return Promise.resolve(version);
         // return this.driver.sendCommand(TelinkCommandCode.GetVersion, {})
         //     .then((result) => {
         //         const meta = {
@@ -178,7 +192,12 @@ class TelinkAdapter extends Adapter {
 
     public async getNetworkParameters(): Promise<TsType.NetworkParameters> {
         logger.debug('getNetworkParameters', NS);
-        return new Promise(()=>{});
+        const resultPayload: TsType.NetworkParameters = {
+            panID: <number>1,
+            extendedPanID: <number>11,
+            channel: <number>11,
+        }
+        return Promise.resolve(resultPayload)
         // return this.driver.sendCommand(TelinkCommandCode.GetNetworkState, {}, 10000)
         //     .then((NetworkStateResponse) => {
         //         const resultPayload: TsType.NetworkParameters = {
@@ -308,7 +327,8 @@ class TelinkAdapter extends Adapter {
             try {
                 const nodeDescriptorResponse = await this.driver.sendCommand(
                     TelinkCommandCode.ZBHCI_CMD_DISCOVERY_NODE_DESC_REQ, {
-                        targetShortAddress: networkAddress
+                        destShortAddress: 0x0,
+                        targetShortAddress: networkAddress,
                     }
                 );
 
@@ -765,7 +785,7 @@ class TelinkAdapter extends Adapter {
     private leaveIndicationListener(data: { telinkObject: TelinkObject }): void {
         logger.debug(`LeaveIndication ${JSON.stringify(data)}`, NS);
         const payload: Events.DeviceLeavePayload = {
-            networkAddress: <number>data.telinkObject.payload.extendedAddress,
+            networkAddress: <number>0, // TODO: data.telinkObject.payload.extendedAddress,
             ieeeAddr: <string>data.telinkObject.payload.extendedAddress
         };
         this.emit(Events.Events.deviceLeave, payload)
