@@ -24,7 +24,7 @@ import {logger} from '../../../utils/logger';
 import {BroadcastAddress} from '../../../zspec/enums';
 
 const NS = 'zh:telink';
-const default_bind_group = 901;  // https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/lib/constants.js#L3
+const default_bind_group = 901;  // https://github.com/Koenkk/zigbee-herdsman-converters/blob/master/src/lib/constants.ts#L5
 interface WaitressMatcher {
     address: number | string;
     endpoint: number;
@@ -77,31 +77,22 @@ class TelinkAdapter extends Adapter {
             await this.sleep(50);
             logger.info("Connected to Telink adapter successfully.", NS);
 
-            // const resetResponse = await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_MGMT_LQI_REQ, {}, 5000)
-
-            // if (resetResponse.code === TelinkMessageCode.RestartNonFactoryNew) {
-                startResult = 'resumed';
-            // } else if (resetResponse.code === TelinkMessageCode.RestartFactoryNew) {
-                // startResult = 'reset';
-            // }
+            startResult = 'resumed';
             await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_COMMISSION_FORMATION);
             await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_BDB_DONGLE_WORKING_MODE_SET, { mode: 0x01 });
 
-            // await this.driver.sendCommand(TelinkCommandCode.RawMode, {enabled: 0x01});
-            // @todo check
-            // await this.driver.sendCommand(TelinkCommandCode.SetDeviceType, {
-                // deviceType: DEVICE_TYPE.coordinator
-            // });
             await this.initNetwork();
             await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_RAW_MODE, { raw: 0x01 });
 
-            // await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD, {
-            //     addressMode: ADDRESS_MODE.short ,
-            //     shortAddress: 0x0000,
-            //     sourceEndpoint:0x01,
-            //     destinationEndpoint:0x01,
-            //     groupAddress: default_bind_group
-            // });
+            await this.driver.sendCommand(TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD, {
+                addressMode: ADDRESS_MODE.short ,
+                destinationAddress: 0x0000,
+                sourceEndpoint: 0x01,
+                destinationEndpoint: 0x01,
+                groupAddress: default_bind_group,
+                groupNameLen: 0,
+                groupName: [],
+            });
         } catch (error) {
             throw new Error("failed to connect to telink adapter " + error.message);
         }

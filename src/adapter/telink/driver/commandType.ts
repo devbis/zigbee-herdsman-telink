@@ -609,12 +609,13 @@ export const TelinkCommand: { [key: string]: TelinkCommandType } = {
     // },
     [TelinkCommandCode.ZBHCI_CMD_ZCL_GROUP_ADD]: {
         request: [
+            { name: 'addressMode', parameterType: ParameterType.UINT8 }, //<device type: uint8_t>
+            { name: 'destinationAddress', parameterType: ParameterType.ADDRESS_WITH_TYPE_DEPENDENCY },
+            { name: 'sourceEndpoint', parameterType: ParameterType.UINT8 },
+            { name: 'destinationEndpoint', parameterType: ParameterType.UINT8 },
             { name: 'groupAddress', parameterType: ParameterType.UINT16BE },
+            { name: 'groupNameLen', parameterType: ParameterType.UINT8 },
             { name: 'groupName', parameterType: ParameterType.BUFFER },
-            // { name: 'addressMode', parameterType: ParameterType.UINT8 }, //<device type: uint8_t>
-            // { name: 'shortAddress', parameterType: ParameterType.UINT16BE },
-            // { name: 'sourceEndpoint', parameterType: ParameterType.UINT8 },
-            // { name: 'destinationEndpoint', parameterType: ParameterType.UINT8 },
         ]
     }
 };
