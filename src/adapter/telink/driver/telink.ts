@@ -325,16 +325,7 @@ export default class Telink extends EventEmitter {
                                 }
                                 break;
                             case 0x0104:
-                                try {
-                                    const zclFrame = ZclFrame.fromBuffer(
-                                        <number>telinkObject.payload.clusterID,
-                                        <Buffer>telinkObject.payload.payload
-                                    );
-                                    this.emit('received', {telinkObject, zclFrame});
-                                } catch (error) {
-                                    debug.error("could not parse zclFrame: " + error);
-                                    this.emit('receivedRaw', {telinkObject});
-                                }
+                                this.emit('received', {telinkObject});
                                 break;
                             default:
 

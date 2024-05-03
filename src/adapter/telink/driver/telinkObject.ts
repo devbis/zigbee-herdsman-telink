@@ -6,6 +6,7 @@ import {TelinkCommandCode, TelinkMessageCode, TelinkObjectPayload} from "./const
 import {TelinkMessage, TelinkMessageParameter} from "./messageType";
 import {TelinkCommand, TelinkCommandParameter, TelinkCommandType} from "./commandType";
 import {Debug} from '../debug';
+import ParameterType from "./parameterType";
 
 type TelinkCode = TelinkCommandCode | TelinkMessageCode;
 type TelinkParameter = TelinkCommandParameter | TelinkMessageParameter;
@@ -13,12 +14,10 @@ type TelinkParameter = TelinkCommandParameter | TelinkMessageParameter;
 
 const debug = Debug('driver:TelinkObject');
 
-const BufferAndListTypes = [
-    'BUFFER', 'BUFFER8', 'BUFFER16',
-    'BUFFER18', 'BUFFER32', 'BUFFER42',
-    'BUFFER100', 'LIST_UINT16', 'LIST_ROUTING_TABLE',
-    'LIST_BIND_TABLE', 'LIST_NEIGHBOR_LQI', 'LIST_NETWORK',
-    'LIST_ASSOC_DEV', 'LIST_UINT8',
+const BufferAndListTypes: ParameterType[] = [
+    ParameterType.BUFFER, ParameterType.BUFFER8, ParameterType.BUFFER16,
+    ParameterType.BUFFER18, ParameterType.BUFFER32, ParameterType.BUFFER42,
+    ParameterType.BUFFER100, ParameterType.LIST_UINT16, ParameterType.LIST_UINT8,
 ];
 
 class TelinkObject {
